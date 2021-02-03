@@ -1,6 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use hex_literal::hex;
+use sha2::{Sha256, Sha512, Digest};
 use ink_lang as ink;
+use ink_prelude::vec::Vec;
+use ink_storage::collections::HashMap;
 
 #[ink::contract]
 mod subscrypt {
@@ -130,7 +134,7 @@ mod subscrypt {
         pub fn add_plan(&mut self, durations: Vec<u128>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             let caller = self.env().caller();
             assert!(self.providers.contains_key(caller), "You should first register in the contract!");
-            let provider = self.providers.get(caller);
+            let provider = self.providers.get(caller).unwrap();
             for i in 0..durations.length {
                 let cons = PlanConsts {
                     duration: durations[i],
@@ -159,7 +163,7 @@ mod subscrypt {
         pub fn change_disable(&mut self, plan_index: u64) {
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).plans.contains_key(&plan_index), "please select a valid plan");
-            let x = self.providers.get(&caller).plans.get(&plan_index).disabled;
+            let x = self.providers.get(&caller).plans.get(&plan_index).unwrap().disabled;
             self.providers.get(&caller).plans.get(&plan_index).disabled = !x;
         }
 
@@ -181,29 +185,79 @@ mod subscrypt {
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-            assert!(!check_subscription(self, caller, provider_address, plan_index: u128), "You are already subscribed to this plan!");
+            assert!(!check_subscription(self, caller, provider_address, plan_index.copy()), "You are already subscribed to this plan!");
 
-            // if self.users.get(&caller) { }
+            if !user.records.contains_key(&provider_address) {
+                user.list_of_providers.insert(provider_address);
+            }
+            let mut plan_record: PlanRecord = match user.records.get(&provider_address) { some => k };
+            plan_record.plan_index_to_record_index.insert(plan_indexcopy(), user.records[provider_address].subscription_records.len());
+
+            let record: SubscriptionRecord = SubscriptionRecord {
+                provider: provider_address,
+                plan: consts.clone(),
+                plan_index,
+                subscription_time: Self.env().block_timestamp(),
+                meta_data_encrypted: metadata,
+                refunded: false,
+            };
+            plan_record.subscription_records.insert(record);
+
+            plan_record.pass_hash = pass;
+
+            addr: AccountId = self.providers.get(&provider_address).unwrap().money_address;
+            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            transfer(&self, self.env().caller(), consts.price(1000 - plan.max_refund_percent_policy) / 1000);
+
+            self.providers.get(&provider_address).unwrap().payment_manager.addEntry((Self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000);
         }
 
         #[ink(message)]
         pub fn set_subscrypt_pass(&self) {
-            self.my_value_or_zero(&self.env().caller())
+            assert!(self.users.contains_key(self.env().caller()));
+            self.users.get(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
 
         #[ink(message)]
-        pub fn withdraw(&self) {
-            self.my_value_or_zero(&self.env().caller())
+        pub fn withdraw(&mut self) -> u128 {
+            assert!(self.providers.contains_key(self.env().caller()), "You are not a registered provider");
+            let caller: AccountId = self.env().caller();
+            paid: u128 = self.providers.get(caller).unwrap().payment_manager.process();
+            if paid > 0 {
+                transfer(&self, caller, paid);
+            }
+            return paid;
         }
 
         #[ink(message)]
-        pub fn refund(&self) {
-            self.my_value_or_zero(&self.env().caller())
+        pub fn refund(&mut self, provider_address: u128, plan_index: u128) {
+            let caller: AccountId = self.env().caller();
+            assert!(self.check_subscription(caller, provider_address, plan_index));
+            last_index: u128 = self.users.get(caller).unwrap().records.get(&provider_address).unwrap().planIndexToRecordIndex.get(&plan_index).unwrap();
+            record: SubscriptionRecord = self.users.get(caller).unwrap().records.get(&provider_address).unwrap().subscriptionRecords.get(last_index).unwrap();
+            time_percent: u128 = (self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration);
+            if 1000 - time_percent > record.plan.max_refund_percent_policy {
+                time_percent = record.plan.max_refund_percent_policy;
+            } else {
+                time_percent = 1000 - time_percent;
+            }
+            transfer_value: u128 = time_percent * record.plan.price / 1000;
+            record.refunded = true;
+            transfer(self, caller, transfer_value);
+            if time_percent < record.plan.max_refund_percent_policy {
+                refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
+                transfer(self, self.providers.get(&provider_address).unwrap().money_address, transfer_value);
+            }
+
+            self.providers.get(&provider_address).unwrap().payment_manager.remove_entry((record.plan.duration + record.subscription_time - &self.start_time) / 86400, record.plan.price * record.plan.maxRefundPercentPolicy);
+
         }
 
         #[ink(message)]
-        pub fn check_auth(&self) {
-            self.my_value_or_zero(&self.env().caller())
+        pub fn check_auth(&self, user: AccountId, provider: AccountId, token: bytes32, pass_phrase: bytes32) {
+            let mut hasher = Sha256::new();
+            hasher.update(b"hello world");
+            let result = hasher.finalize();
         }
 
         #[ink(message)]
@@ -225,6 +279,23 @@ mod subscrypt {
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self) {
             self.my_value_or_zero(&self.env().caller())
+        }
+        
+        fn check_subscription(str: &Subscrypt, caller: AccountId, provider_address: AccountId, plan_index: u256) {
+            unimplemented!()
+        }
+
+        fn transfer(&self, addr: AccountId, amount: u256) {
+            self.env()
+                .transfer(addr, amount)
+                .map_err(|err| {
+                    match err {
+                        ink_env::Error::BelowSubsistenceThreshold => {
+                            Error::BelowSubsistenceThreshold
+                        }
+                        _ => Error::TransferFailed,
+                    }
+                });
         }
 
     }
