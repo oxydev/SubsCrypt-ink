@@ -12,7 +12,7 @@ mod subscrypt {
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
     use ink_env::{Error, AccountId as Account};
-
+    use sha2::Sha256;
     struct SubscriptionRecord {
         provider: Account,
         plan: PlanConsts,
@@ -358,7 +358,7 @@ mod subscrypt {
     #[cfg(test)]
     mod tests {
         use super::*;
-
+        use ink_lang as ink;
         #[test]
         fn constructor_works() {
             let subsCrypt = Subscrypt::new();
