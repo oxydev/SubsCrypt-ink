@@ -374,22 +374,29 @@ mod subscrypt {
     mod tests {
         use super::*;
 
-        use ink_lang as ink;
-
         #[test]
-        fn default_works() {
-            // let contract = Incrementer::default();
-            assert_eq!(3, 0);
+        fn constructor_works() {
+            let subsCrypt = Subscrypt::new();
+            assert_eq!(subsCrypt.provider_register_fee, 100);
         }
 
         #[test]
-        fn it_works() {
-            // let mut contract = Incrementer::new(42);
-            // assert_eq!(contract.get(), 42);
-            // contract.inc(5);
-            // assert_eq!(contract.get(), 47);
+        fn default_works() {
+            let subsCrypt = Subscrypt::default();
+            assert_eq!(subsCrypt.provider_register_fee, 0);
+        }
+        // pub fn provider_register(&mut self, durations: Vec<u128>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: AccountId) {
+
+        #[test]
+        fn provider_register_works() {
+            let mut subsCrypt = Subscrypt::new();
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            subsCrypt.provider_register(Vec::new(60*60*24,60*60*24*30),Vec::new(2,2),Vec::new(10000,50000),Vec::new(50,100),accounts.alice);
+            assert_eq!(subsCrypt.providers.get(accounts.alice).unwrap().plans.get(0).duration, 60*60*24);
             // contract.inc(-50);
-            assert_eq!(-3, -3);
+            // assert_eq!(-3, -3);
         }
 
         #[ink::test]
