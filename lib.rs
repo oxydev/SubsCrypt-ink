@@ -1,18 +1,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
+#![feature(type_ascription)]
 use hex_literal::hex;
 use sha2::{Sha256, Sha512, Digest};
 use ink_lang as ink;
-use ink_prelude::vec::Vec;
+
 use ink_storage::collections::HashMap;
 
 #[ink::contract]
 mod subscrypt {
-    use ink_storage::collections;
+    use ink_storage::{collections};
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
     use ink_env::{Error, AccountId as Account};
     use sha2::Sha256;
+    use ink_prelude::vec::Vec;
+    use ink_storage::{
+        traits::{
+            PackedLayout,
+            SpreadLayout,
+        },
+        Lazy,
+    };
+    use std::convert::TryInto;
+    #[derive(SpreadLayout, PackedLayout,scale::Encode, scale::Decode,Debug,scale_info::TypeInfo)]
+
     struct SubscriptionRecord {
         provider: Account,
         plan: PlanConsts,
@@ -22,13 +33,13 @@ mod subscrypt {
         //encrypted Data with public key of provider
         refunded: bool,
     }
-
+    #[derive(SpreadLayout, PackedLayout,scale::Encode, scale::Decode,Debug,scale_info::TypeInfo)]
     struct PlanRecord {
-        plan_index_to_record_index: HashMap<u128, u128>,
         subscription_records: Vec<SubscriptionRecord>,
         pass_hash: String,
     }
 
+    #[derive(PackedLayout, SpreadLayout,scale::Encode,scale::Decode,Debug,scale_info::TypeInfo)]
     struct PlanConsts {
         duration: u128,
         active_session_limit: u128,
@@ -37,26 +48,32 @@ mod subscrypt {
         disabled: bool,
     }
 
+    #[derive(PackedLayout, SpreadLayout,scale::Encode,scale::Decode,Debug,scale_info::TypeInfo)]
     struct Provider {
         plans: Vec<PlanConsts>,
         money_address: Account,
         payment_manager: LinkedList,
+
+
     }
 
+    #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout,Debug,scale_info::TypeInfo)]
+    #[cfg_attr(
+    feature = "std",
+    )]
     struct User {
-        records: HashMap<Account, PlanRecord>,
         list_of_providers: Vec<Account>,
         joined_time: u128,
         subs_crypt_pass_hash: String,
     }
-
+    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
     struct LinkedList {
         head: u128,
         back: u128,
-        objects: HashMap<u128, Object>,
         length: u128,
     }
 
+    #[derive(PackedLayout, SpreadLayout,scale::Encode,scale::Decode,scale_info::TypeInfo,Debug)]
     struct Object {
         number: u128,
         next_day: u128,
@@ -65,19 +82,26 @@ mod subscrypt {
     #[ink(storage)]
     pub struct Subscrypt {
         start_time: u64,
-        provider_register_fee: u64,
+        provider_register_fee: u128,
         providers: HashMap<Account, Provider>,
+        objects: HashMap<(Account,u128), Object>,
         users: HashMap<Account, User>,
+        records: HashMap<(Account,Account), PlanRecord>, // first account is user the next one is provider
+        plan_index_to_record_index: HashMap<(Account,Account,u128), u128>,
     }
 
     impl Subscrypt {
         #[ink(constructor)]
         pub fn new() -> Self {
             Self {
-                start_time: Self.env().block_timestamp(),
+                start_time: Self::env().block_timestamp(),
                 provider_register_fee: 100,
                 providers: ink_storage::collections::HashMap::new(),
                 users: ink_storage::collections::HashMap::new(),
+                objects: ink_storage::collections::HashMap::new(),
+                records: ink_storage::collections::HashMap::new(),
+                plan_index_to_record_index:ink_storage::collections::HashMap::new()
+
             }
         }
 
@@ -88,6 +112,9 @@ mod subscrypt {
                 provider_register_fee: 0,
                 providers: Default::default(),
                 users: Default::default(),
+                objects: Default::default(),
+                records: Default::default(),
+                plan_index_to_record_index:Default::default(),
             }
         }
 
@@ -95,15 +122,16 @@ mod subscrypt {
         pub fn provider_register(&mut self, durations: Vec<u128>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
-            assert!(!self.providers.contains_key(caller), "You can not register again in the contract!");
+            assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
 
             let mut provider = Provider {
                 plans: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
             };
+
             self.providers.insert(caller, provider);
-            for i in 0..durations.length {
+            for i in 0..durations.len() {
                 let cons = PlanConsts {
                     duration: durations[i],
                     active_session_limit: active_session_limits[i],
@@ -118,9 +146,9 @@ mod subscrypt {
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u128>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             let caller = self.env().caller();
-            assert!(self.providers.contains_key(caller), "You should first register in the contract!");
-            let mut provider = self.providers.get_mut(caller).unwrap();
-            for i in 0..durations.length {
+            assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
+            let mut provider = self.providers.get_mut(&caller).unwrap();
+            for i in 0..durations.len() {
                 let cons = PlanConsts {
                     duration: durations[i],
                     active_session_limit: active_session_limits[i],
@@ -132,23 +160,27 @@ mod subscrypt {
             }
         }
 
+
         #[ink(message)]
+        #[feature(type_ascription)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u128, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let caller = self.env().caller();
-            assert!(self.providers.get(&caller).plans.contains_key(&plan_index), "please select a valid plan");
-            let x = self.providers.get(&caller).plans.get(&plan_index);
-            x.duration = duration;
-            x.active_session_limit = active_session_limit;
-            x.price = price;
-            x.max_refund_percent_policy = max_refund_percent_policy;
-            x.disabled = disabled;
+            assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
+            let mut provider = self.providers.get(&caller).unwrap().plans;
+            let mut plan = provider.get(plan_index.try_into().unwrap());
+
+            plan.duration = duration;
+            plan.active_session_limit = active_session_limit;
+            plan.price = price;
+            plan.max_refund_percent_policy = max_refund_percent_policy;
+            plan.disabled = disabled;
         }
 
         #[ink(message)]
-        pub fn change_disable(&mut self, plan_index: u64) {
+        pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
-            assert!(self.providers.get(&caller).plans.contains_key(&plan_index), "please select a valid plan");
-            let x = self.providers.get(&caller).plans.get(&plan_index).unwrap().disabled;
+            assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
+            let x = self.providers.get(&caller).unwrap().plans.get(&plan_index).unwrap().disabled;
             self.providers.get(&caller).plans.get(&plan_index).disabled = !x;
         }
 
@@ -157,7 +189,6 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
-                    records: HashMap::new(),
                     list_of_providers: Vec::new(),
                     joined_time: Self.env().block_timestamp(),
                     subs_crypt_pass_hash: "".to_string(),
