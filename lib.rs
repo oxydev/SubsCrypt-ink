@@ -23,7 +23,6 @@ mod subscrypt {
     };
     use std::convert::TryInto;
     #[derive(SpreadLayout, PackedLayout,scale::Encode, scale::Decode,Debug,scale_info::TypeInfo)]
-
     struct SubscriptionRecord {
         provider: Account,
         plan: PlanConsts,
@@ -64,20 +63,20 @@ mod subscrypt {
         joined_time: u128,
         subs_crypt_pass_hash: String,
     }
-    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug,scale_info::TypeInfo)]
     struct LinkedList {
         head: u128,
         back: u128,
         length: u128,
     }
 
-    #[derive(PackedLayout, SpreadLayout,scale::Encode,scale::Decode,scale_info::TypeInfo,Debug)]
+    #[derive(PackedLayout, SpreadLayout,scale::Encode,scale::Decode,Debug,scale_info::TypeInfo)]
     struct Object {
         number: u128,
         next_day: u128,
     }
-
     #[ink(storage)]
+    // #[derive(PackedLayout,scale::Encode,scale::Decode,scale_info::TypeInfo)]
     pub struct Subscrypt {
         start_time: u64,
         provider_register_fee: u128,
@@ -162,11 +161,12 @@ mod subscrypt {
         #[ink(message)]
         #[feature(type_ascription)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u128, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
+            let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let mut provider = self.providers.get_mut(&caller).unwrap();
             // let mut plan: PlanConsts = provider.plans.get_mut(plan_index.try_into().unwrap());
-            let mut plan: PlanConsts = provider.plans[plan_index];
+            let mut plan: PlanConsts = *(provider.plans.get(number).unwrap());
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
