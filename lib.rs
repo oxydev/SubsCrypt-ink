@@ -194,7 +194,7 @@ mod subscrypt {
                     subs_crypt_pass_hash: "".to_string(),
                 });
             }
-            let mut user: &User = self.users.get_mut(&caller).unwrap();
+            let mut user: &mut User = self.users.get_mut(&caller).unwrap();
             let number: usize = plan_index.try_into().unwrap();
 
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
@@ -208,14 +208,20 @@ mod subscrypt {
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
             }
-            let mut plan_record: &PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
+            let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
             self.plan_index_to_record_index.insert((caller, provider_address, plan_index), self.records.get(&(caller, provider_address)).unwrap().subscription_records.len());
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
-                plan: consts.clone(),
+                plan: PlanConsts{
+                    duration: consts.duration,
+                    active_session_limit: consts.active_session_limit,
+                    price: consts.price,
+                    max_refund_percent_policy: consts.max_refund_percent_policy,
+                    disabled: consts.disabled,
+                },
                 plan_index,
-                subscription_time: Self.env().block_timestamp(),
+                subscription_time: self.env().block_timestamp(),
                 meta_data_encrypted: metadata,
                 refunded: false,
             };
