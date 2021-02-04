@@ -274,7 +274,7 @@ mod subscrypt {
             // assert!(self.check_subscription(caller, provider_address, plan_index));
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
             let number: usize = (*last_index).try_into().unwrap();
-            let mut record: &mut SubscriptionRecord = self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
+            let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
             let mut time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
@@ -282,14 +282,15 @@ mod subscrypt {
                 time_percent = 1000 - time_percent;
             }
             let transfer_value: u128 = time_percent * record.plan.price / 1000;
-            record.refunded = true;
+            //record.refunded = true;
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
                 self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value);
             }
 
-            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy)
+            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy);
+            self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
             //self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry(((record.plan.duration + record.subscription_time - self.start_time) / 86400) as u128, record.plan.price * record.plan.max_refund_percent_policy);
         }
 
