@@ -255,8 +255,9 @@ mod subscrypt {
 
             let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
-                self.transfer( caller, paid);
+                self.transfer(caller, paid);
 
+            }
             return paid;
         }
 
