@@ -209,7 +209,7 @@ mod subscrypt {
                 user.list_of_providers.push(provider_address);
             }
             let mut plan_record: &PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
-            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), self.records.get(&(caller, provider_address)).unwrap().subscription_records.len());
+            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), self.records.get(&(caller, provider_address)).unwrap().subscription_records.len().try_into().unwrap());
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
