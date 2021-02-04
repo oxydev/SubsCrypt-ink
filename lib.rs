@@ -259,7 +259,6 @@ mod subscrypt {
 
             let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).try_into().unwrap());
 
-            //let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
                 self.transfer(caller, paid);
             }
@@ -271,7 +270,6 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             let time:u64 = self.env().block_timestamp();
 
-            // assert!(self.check_subscription(caller, provider_address, plan_index));
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
@@ -282,7 +280,6 @@ mod subscrypt {
                 time_percent = 1000 - time_percent;
             }
             let transfer_value: u128 = time_percent * record.plan.price / 1000;
-            //record.refunded = true;
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
@@ -291,7 +288,6 @@ mod subscrypt {
 
             self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
-            //self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry(((record.plan.duration + record.subscription_time - self.start_time) / 86400) as u128, record.plan.price * record.plan.max_refund_percent_policy);
         }
 
         #[ink(message)]
@@ -308,7 +304,8 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) {
-            //self.my_value_or_zero(&self.env().caller())
+            let caller: Account = self.env().caller();
+            
         }
 
         #[ink(message)]
@@ -321,7 +318,8 @@ mod subscrypt {
             //self.my_value_or_zero(&self.env().caller())
         }
 
-        fn check_subscription(str: &Subscrypt, caller: Account, provider_address: Account, plan_index: u128) {
+        #[ink(message)]
+        pub fn check_subscription(&self, caller: Account, provider_address: Account, plan_index: u128) {
             unimplemented!()
         }
 
