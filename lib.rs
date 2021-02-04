@@ -132,7 +132,6 @@ mod subscrypt {
                 payment_manager: LinkedList::new(),
             };
 
-            self.providers.insert(caller, provider);
             for i in 0..durations.len() {
                 let cons = PlanConsts {
                     duration: durations[i],
@@ -143,6 +142,8 @@ mod subscrypt {
                 };
                 provider.plans.push(cons);
             }
+            self.providers.insert(caller, provider);
+
         }
 
         #[ink(message)]
@@ -170,8 +171,8 @@ mod subscrypt {
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let mut provider = self.providers.get_mut(&caller).unwrap();
-            // let mut plan: PlanConsts = provider.plans.get_mut(plan_index.try_into().unwrap());
-            let mut plan: PlanConsts = *(provider.plans.get(number).unwrap());
+            let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
+            // let mut plan: PlanConsts = *(provider.plans.get(number).unwrap());
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
@@ -186,12 +187,13 @@ mod subscrypt {
             let number: usize = plan_index.try_into().unwrap();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let x = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get(&caller).unwrap().plans[number].disabled = !x;
+            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !x;
         }
 
         #[ink(message)]
         pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: String, metadata: String) {
             let caller: Account = self.env().caller();
+            let value:u128 = self.env().transferred_balance();
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
@@ -204,9 +206,9 @@ mod subscrypt {
 
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
             assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
-            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[number];
+            let consts: &PlanConsts = &self.providers.get(&provider_address).unwrap().plans[number];
 
-            assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
+            assert_eq!(consts.price,value , "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
             //assert!(!self.check_subscription(self, caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
@@ -429,8 +431,8 @@ mod subscrypt {
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
                     .expect("Cannot get accounts");
-            subsCrypt.provider_register(Vec::new(60 * 60 * 24, 60 * 60 * 24 * 30), Vec::new(2, 2), Vec::new(10000, 50000), Vec::new(50, 100), accounts.alice);
-            assert_eq!(subsCrypt.providers.get(accounts.alice).unwrap().plans.get(0).duration, 60 * 60 * 24);
+            subsCrypt.provider_register(vec![60 * 60 * 24, 60 * 60 * 24 * 30], vec![2, 2], vec![10000, 50000], vec![50, 100], accounts.alice);
+            //assert_eq!(subsCrypt.providers.get(accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
             // contract.inc(-50);
             // assert_eq!(-3, -3);
         }
