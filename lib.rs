@@ -265,7 +265,7 @@ mod subscrypt {
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
             // assert!(self.check_subscription(caller, provider_address, plan_index));
-            let last_index: u128 = self.users.get(&caller).unwrap().records.get(&provider_address).unwrap().planIndexToRecordIndex.get(&plan_index).unwrap();
+            let last_index: &u128 = self.plan_index_to_record_index.get(&(caller,provider_address,plan_index)).unwrap();
             let mut record: SubscriptionRecord = self.users.get(&caller).unwrap().records.get(&provider_address).unwrap().subscriptionRecords.get(last_index).unwrap();
             let mut time_percent: u128 = (self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration);
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
