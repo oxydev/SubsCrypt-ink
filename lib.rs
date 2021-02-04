@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(type_ascription)]
+//#![feature(type_ascription)]
 use hex_literal::hex;
 use sha2::{Sha256, Sha512, Digest};
 use ink_lang as ink;
@@ -53,8 +53,6 @@ mod subscrypt {
         plans: Vec<PlanConsts>,
         money_address: Account,
         payment_manager: LinkedList,
-
-
     }
 
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout,Debug,scale_info::TypeInfo)]
@@ -166,8 +164,9 @@ mod subscrypt {
         pub fn edit_plan(&mut self, plan_index: u128, duration: u128, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let mut provider = self.providers.get(&caller).unwrap().plans;
-            let mut plan = provider.get(plan_index.try_into().unwrap());
+            let mut provider = self.providers.get_mut(&caller).unwrap();
+            // let mut plan: PlanConsts = provider.plans.get_mut(plan_index.try_into().unwrap());
+            let mut plan: PlanConsts = provider.plans[plan_index];
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
@@ -180,8 +179,8 @@ mod subscrypt {
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let x = self.providers.get(&caller).unwrap().plans.get(&plan_index).unwrap().disabled;
-            self.providers.get(&caller).plans.get(&plan_index).disabled = !x;
+            let x = self.providers.get(&caller).unwrap().plans[plan_index].disabled;
+            self.providers.get(&caller).unwrap().plans[plan_index].disabled = !x;
         }
 
         #[ink(message)]
@@ -197,7 +196,7 @@ mod subscrypt {
             let user: Option<&User> = self.users.get(&caller);
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
             assert!(self.providers.get(&provider_address).plans.length > plan_index, "Wrong plan index!");
-            let consts: PlanConsts = self.providers.get(&provider_address).plans.get(&plan_index);
+            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[plan_index];
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
