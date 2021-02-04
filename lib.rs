@@ -60,7 +60,7 @@ mod subscrypt {
     )]
     struct User {
         list_of_providers: Vec<Account>,
-        joined_time: u128,
+        joined_time: u64,
         subs_crypt_pass_hash: String,
     }
     #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug,scale_info::TypeInfo)]
@@ -178,9 +178,10 @@ mod subscrypt {
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
+            let number: usize = plan_index.try_into().unwrap();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let x = self.providers.get(&caller).unwrap().plans[plan_index].disabled;
-            self.providers.get(&caller).unwrap().plans[plan_index].disabled = !x;
+            let x = self.providers.get(&caller).unwrap().plans[number].disabled;
+            self.providers.get(&caller).unwrap().plans[number].disabled = !x;
         }
 
         #[ink(message)]
@@ -189,14 +190,16 @@ mod subscrypt {
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
-                    joined_time: Self.env().block_timestamp(),
+                    joined_time: self.env().block_timestamp(),
                     subs_crypt_pass_hash: "".to_string(),
                 });
             }
             let user: Option<&User> = self.users.get(&caller);
+            let number: usize = plan_index.try_into().unwrap();
+
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
-            assert!(self.providers.get(&provider_address).plans.length > plan_index, "Wrong plan index!");
-            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[plan_index];
+            assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
+            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[number];
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
