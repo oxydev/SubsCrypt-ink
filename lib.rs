@@ -193,6 +193,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: String, metadata: String) {
             let caller: Account = self.env().caller();
+            let time :u64= self.env().block_timestamp();
             let value:u128 = self.env().transferred_balance();
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
@@ -217,7 +218,7 @@ mod subscrypt {
             }
 
             let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
-            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), self.records.get(&(caller, provider_address)).unwrap().subscription_records.len().try_into().unwrap());
+            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
@@ -229,7 +230,7 @@ mod subscrypt {
                     disabled: consts.disabled,
                 },
                 plan_index,
-                subscription_time: self.env().block_timestamp(),
+                subscription_time: time,
                 meta_data_encrypted: metadata,
                 refunded: false,
             };
@@ -268,11 +269,13 @@ mod subscrypt {
         #[ink(message)]
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
+            let time:u64 = self.env().block_timestamp();
+
             // assert!(self.check_subscription(caller, provider_address, plan_index));
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
             let number: usize = (*last_index).try_into().unwrap();
-            let mut record: &mut SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
-            let mut time_percent: u128 = ((self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
+            let mut record: &mut SubscriptionRecord = self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
+            let mut time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
             } else {
