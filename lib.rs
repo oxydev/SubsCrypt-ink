@@ -215,7 +215,7 @@ mod subscrypt {
                 provider: provider_address,
                 plan: consts.clone(),
                 plan_index,
-                subscription_time: Self.env().block_timestamp(),
+                subscription_time: self.env().block_timestamp(),
                 meta_data_encrypted: metadata,
                 refunded: false,
             };
@@ -232,17 +232,17 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: String) {
-            assert!(self.users.contains_key(self.env().caller()));
+            assert!(self.users.contains_key(&self.env().caller()));
             self.users.get_mut(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
 
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
-            assert!(self.providers.contains_key(self.env().caller()), "You are not a registered provider");
+            assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
-            let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((Self.env().block_timestamp() / 86400));
+            let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
-                self.transfer( caller, paid.copy());
+                self.transfer( caller, paid);
             }
             return paid;
         }
@@ -250,7 +250,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
-            assert!(self.check_subscription(caller, provider_address, plan_index));
+            // assert!(self.check_subscription(caller, provider_address, plan_index));
             let last_index: u128 = self.users.get(&caller).unwrap().records.get(&provider_address).unwrap().planIndexToRecordIndex.get(&plan_index).unwrap();
             let mut record: SubscriptionRecord = self.users.get(&caller).unwrap().records.get(&provider_address).unwrap().subscriptionRecords.get(last_index).unwrap();
             let mut time_percent: u128 = (self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration);
