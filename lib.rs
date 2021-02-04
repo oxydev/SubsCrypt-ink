@@ -256,7 +256,6 @@ mod subscrypt {
             let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
                 self.transfer(caller, paid);
-
             }
             return paid;
         }
@@ -266,22 +265,23 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             // assert!(self.check_subscription(caller, provider_address, plan_index));
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller,provider_address,plan_index)).unwrap();
-            let mut record: SubscriptionRecord = self.users.get(&caller).unwrap().records.get(&provider_address).unwrap().subscriptionRecords.get(last_index).unwrap();
-            let mut time_percent: u128 = (self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration);
+            let number:usize = (*last_index).try_into().unwrap();
+            let mut record: &mut SubscriptionRecord = self.records.get(&(caller,provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
+            let mut time_percent: u128 = ((self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
             } else {
-                time_percent = 1000 - time_percent.copy();
+                time_percent = 1000 - time_percent;
             }
             let transfer_value: u128 = time_percent * record.plan.price / 1000;
             record.refunded = true;
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
-                let refunded_amount: u128 = (record.plan.max_refund_percent_policy.copy() - time_percent.copy()) * record.plan.price.copy() / 1000;
-                self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value.copy());
+                let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price/ 1000;
+                self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value);
             }
 
-            self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry((record.plan.duration.copy() + record.subscription_time.copy() - &self.start_time) / 86400, record.plan.price.copy() * record.plan.max_refund_percent_policy.copy());
+            self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry(((record.plan.duration + record.subscription_time - self.start_time) / 86400) as u128, record.plan.price * record.plan.max_refund_percent_policy);
         }
 
         #[ink(message)]
