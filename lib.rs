@@ -69,15 +69,15 @@ mod subscrypt {
 
     #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
     struct LinkedList {
-        head: u128,
-        back: u128,
+        head: u64,
+        back: u64,
         length: u128,
     }
 
     #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
     struct Object {
         number: u128,
-        next_day: u128,
+        next_day: u64,
     }
 
     #[ink(storage)]
@@ -86,7 +86,7 @@ mod subscrypt {
         start_time: u64,
         provider_register_fee: u128,
         providers: HashMap<Account, Provider>,
-        objects: HashMap<(Account, u128), Object>,
+        objects: HashMap<(Account, u64), Object>,
         users: HashMap<Account, User>,
         records: HashMap<(Account, Account), PlanRecord>,
         // first account is user the next one is provider
@@ -239,7 +239,8 @@ mod subscrypt {
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
             self.transfer(self.env().caller(), consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
 
-            self.providers.get_mut(&provider_address).unwrap().payment_manager.add_entry((self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000);
+            self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
+            //self.providers.get_mut(&provider_address).unwrap().payment_manager.add_entry((self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000);
         }
 
         #[ink(message)]
@@ -253,7 +254,9 @@ mod subscrypt {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
 
-            let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
+            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).try_into().unwrap());
+
+            //let paid: u128 = self.providers.get_mut(&caller).unwrap().payment_manager.process((self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
                 self.transfer(caller, paid);
             }
@@ -327,6 +330,67 @@ mod subscrypt {
                     }
                 });
         }
+
+
+        pub fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+            let linked_list: &mut LinkedList = self.providers.get_mut(&provider_address).unwrap_mut().payment_manager;
+            if linked_list.length == 0 {
+                let object = Object { number: amount, next_day: day_id.copy() };
+                linked_list.head = day_id.copy();
+                self.objects.insert((provider_address, day_id.copy()), object);
+                linked_list.back = day_id;
+                linked_list.length = self.length.copy() + 1;
+            } else if day_id < linked_list.head {
+                let object = Object { number: amount, next_day: day_id.copy() };
+                linked_list.head = day_id.copy();
+                self.objects.insert((provider_address, day_id.copy()), object);
+                linked_list.length = linked_list.length.copy() + 1;
+            } else if day_id > linked_list.back {
+                self.objects.get(&(provider_address, day_id)).unwrap().nextDay = day_id.copy();
+                let object = Object { number: amount, next_day: day_id.copy() };
+                linked_list.back = day_id.copy();
+                self.objects.insert((provider_address, day_id.copy()), object);
+                linked_list.length = linked_list.length.copy() + 1;
+            } else {
+                let mut cur_id: u64 = linked_list.head.copy();
+                loop {
+                    if day_id == cur_id {
+                        self.objects.get(&(provider_address, day_id)).number += amount;
+                        break;
+                    } else if day_id < self.objects.get(&(provider_address, cur_id)).unwrap().next_day {
+                        let object = Object { number: amount, next_day: self.objects.get(&(provider_address, cur_id)).unwrap().next_day };
+                        self.objects.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
+                        self.objects.insert(day_id, object);
+                        linked_list.length = linked_list.length + 1;
+                        break;
+                    }
+                    cur_id = self.objects.get(&(provider_address, cur_id)).unwrap().next_day;
+                    if cur_id == linked_list.back {
+                        break;
+                    }
+                }
+            }
+        }
+
+        pub fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+            self.objects.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
+        }
+
+        pub fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
+            let linked_list: &mut LinkedList = self.providers.get_mut(&provider_address).unwrap().payment_manager;
+            let mut sum: u128 = 0;
+            let mut cur_id: u64 = linked_list.head;
+            while day_id >= cur_id {
+                sum += self.objects.get(&(provider_address, cur_id)).unwrap().number;
+                cur_id = self.objects.get(&(provider_address, cur_id)).unwrap().next_day;
+                linked_list.length -= 1;
+                if cur_id == linked_list.back {
+                    break;
+                }
+            }
+            linked_list.head = cur_id;
+            return sum;
+        }
     }
 
 
@@ -337,64 +401,6 @@ mod subscrypt {
                 head: 0,
                 length: 0,
             }
-        }
-
-        pub fn add_entry(&mut self, day_id: u64, amount: u128) {
-            if self.length == 0 {
-                let object = Object { number: amount, next_day: day_id.copy() };
-                self.head = day_id.copy();
-                self.objects.insert(day_id.copy(), object);
-                self.back = day_id;
-                self.length = self.length.copy() + 1;
-            } else if day_id < self.head {
-                let object = Object { number: amount, next_day: day_id.copy() };
-                self.head = day_id.copy();
-                self.objects.insert(day_id.copy(), object);
-                self.length = self.length.copy() + 1;
-            } else if day_id > self.back {
-                self.objects.get(&day_id).unwrap().nextDay = day_id.copy();
-                let object = Object { number: amount, next_day: day_id.copy() };
-                self.back = day_id.copy();
-                self.objects.insert(day_id.copy(), object);
-                self.length = self.length.copy() + 1;
-            } else {
-                let mut cur_id: u128 = self.head.copy();
-                loop {
-                    if day_id == cur_id {
-                        self.objects.get(&day_id).number += amount;
-                        break;
-                    } else if day_id < self.objects.get(&cur_id).unwrap().next_day {
-                        let object = Object { number: amount, next_day: self.objects.get(&cur_id).unwrap().next_day };
-                        self.objects.get(&cur_id).next_day = day_id.copy();
-                        self.objects.insert(day_id.copy(), object);
-                        self.length = self.length.copy() + 1;
-                        break;
-                    }
-                    cur_id = self.objects.get(&cur_id).next_day;
-                    if cur_id == self.back {
-                        break;
-                    }
-                }
-            }
-        }
-
-        pub fn remove_entry(&mut self, day_id: u128, amount: u128) {
-            self.objects.get(&day_id).number -= amount;
-        }
-
-        pub fn process(&mut self, day_id: u64) -> u128 {
-            let mut sum: u128 = 0;
-            let mut cur_id: u128 = self.head.copy();
-            while day_id >= cur_id {
-                sum += self.objects.get(&cur_id).unwrap().number;
-                cur_id = self.objects.get(&cur_id).unwrap().next_day;
-                self.length -= 1;
-                if cur_id == self.back {
-                    break;
-                }
-            }
-            self.head = cur_id;
-            return sum;
         }
     }
 
