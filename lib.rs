@@ -208,7 +208,7 @@ mod subscrypt {
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-            //assert!(!self.check_subscription(self, caller, provider_address, plan_index.copy()), "You are already subscribed to this plan!");
+            //assert!(!self.check_subscription(self, caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
@@ -267,9 +267,9 @@ mod subscrypt {
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
             // assert!(self.check_subscription(caller, provider_address, plan_index));
-            let last_index: &u128 = self.plan_index_to_record_index.get(&(caller,provider_address,plan_index)).unwrap();
-            let number:usize = (*last_index).try_into().unwrap();
-            let mut record: &mut SubscriptionRecord = self.records.get(&(caller,provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
+            let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
+            let number: usize = (*last_index).try_into().unwrap();
+            let mut record: &mut SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap();
             let mut time_percent: u128 = ((self.env().block_timestamp() - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
@@ -280,11 +280,12 @@ mod subscrypt {
             record.refunded = true;
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
-                let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price/ 1000;
+                let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
                 self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value);
             }
 
-            self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry(((record.plan.duration + record.subscription_time - self.start_time) / 86400) as u128, record.plan.price * record.plan.max_refund_percent_policy);
+            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy)
+            //self.providers.get_mut(&provider_address).unwrap().payment_manager.remove_entry(((record.plan.duration + record.subscription_time - self.start_time) / 86400) as u128, record.plan.price * record.plan.max_refund_percent_policy);
         }
 
         #[ink(message)]
@@ -296,22 +297,22 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(&self) {
-            self.my_value_or_zero(&self.env().caller())
+            //self.my_value_or_zero(&self.env().caller())
         }
 
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) {
-            self.my_value_or_zero(&self.env().caller())
+            //self.my_value_or_zero(&self.env().caller())
         }
 
         #[ink(message)]
         pub fn retrieve_data_with_password(&self) {
-            self.my_value_or_zero(&self.env().caller())
+            //self.my_value_or_zero(&self.env().caller())
         }
 
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self) {
-            self.my_value_or_zero(&self.env().caller())
+            //self.my_value_or_zero(&self.env().caller())
         }
 
         fn check_subscription(str: &Subscrypt, caller: Account, provider_address: Account, plan_index: u128) {
@@ -333,34 +334,34 @@ mod subscrypt {
 
 
         pub fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
-            let linked_list: &mut LinkedList = self.providers.get_mut(&provider_address).unwrap_mut().payment_manager;
+            let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             if linked_list.length == 0 {
-                let object = Object { number: amount, next_day: day_id.copy() };
-                linked_list.head = day_id.copy();
-                self.objects.insert((provider_address, day_id.copy()), object);
+                let object = Object { number: amount, next_day: day_id };
+                linked_list.head = day_id;
+                self.objects.insert((provider_address, day_id), object);
                 linked_list.back = day_id;
-                linked_list.length = self.length.copy() + 1;
+                linked_list.length = linked_list.length + 1;
             } else if day_id < linked_list.head {
-                let object = Object { number: amount, next_day: day_id.copy() };
-                linked_list.head = day_id.copy();
-                self.objects.insert((provider_address, day_id.copy()), object);
-                linked_list.length = linked_list.length.copy() + 1;
+                let object = Object { number: amount, next_day: day_id };
+                linked_list.head = day_id;
+                self.objects.insert((provider_address, day_id), object);
+                linked_list.length = linked_list.length + 1;
             } else if day_id > linked_list.back {
-                self.objects.get(&(provider_address, day_id)).unwrap().nextDay = day_id.copy();
-                let object = Object { number: amount, next_day: day_id.copy() };
-                linked_list.back = day_id.copy();
-                self.objects.insert((provider_address, day_id.copy()), object);
-                linked_list.length = linked_list.length.copy() + 1;
+                self.objects.get_mut(&(provider_address, day_id)).unwrap().next_day = day_id;
+                let object = Object { number: amount, next_day: day_id };
+                linked_list.back = day_id;
+                self.objects.insert((provider_address, day_id), object);
+                linked_list.length = linked_list.length + 1;
             } else {
-                let mut cur_id: u64 = linked_list.head.copy();
+                let mut cur_id: u64 = linked_list.head;
                 loop {
                     if day_id == cur_id {
-                        self.objects.get(&(provider_address, day_id)).number += amount;
+                        self.objects.get_mut(&(provider_address, day_id)).unwrap().number += amount;
                         break;
                     } else if day_id < self.objects.get(&(provider_address, cur_id)).unwrap().next_day {
                         let object = Object { number: amount, next_day: self.objects.get(&(provider_address, cur_id)).unwrap().next_day };
                         self.objects.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
-                        self.objects.insert(day_id, object);
+                        self.objects.insert((provider_address, day_id), object);
                         linked_list.length = linked_list.length + 1;
                         break;
                     }
@@ -377,7 +378,7 @@ mod subscrypt {
         }
 
         pub fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
-            let linked_list: &mut LinkedList = self.providers.get_mut(&provider_address).unwrap().payment_manager;
+            let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             let mut sum: u128 = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
