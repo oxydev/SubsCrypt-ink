@@ -194,7 +194,7 @@ mod subscrypt {
                     subs_crypt_pass_hash: "".to_string(),
                 });
             }
-            let user: Option<&User> = self.users.get(&caller);
+            let mut user: &User = self.users.get_mut(&caller).unwrap();
             let number: usize = plan_index.try_into().unwrap();
 
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
@@ -203,13 +203,13 @@ mod subscrypt {
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-            assert!(!self.check_subscription(self, caller, provider_address, plan_index.copy()), "You are already subscribed to this plan!");
+            //assert!(!self.check_subscription(self, caller, provider_address, plan_index.copy()), "You are already subscribed to this plan!");
 
-            if !user.records.contains_key(&provider_address) {
-                user.list_of_providers.insert(provider_address);
+            if !self.records.contains_key(&(caller, provider_address)) {
+                user.list_of_providers.push(provider_address);
             }
-            let mut plan_record: PlanRecord = user.records.get(&provider_address).unwrap();
-            plan_record.plan_index_to_record_index.insert(plan_index.copy(), user.records[provider_address].subscription_records.len());
+            let mut plan_record: &PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
+            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), self.records.get(&(caller, provider_address)).unwrap().subscription_records.len());
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
