@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //#![feature(type_ascription)]
-use hex_literal::hex;
-use sha2::{Sha256, Sha512, Digest};
 use ink_lang as ink;
 
 use ink_storage::collections::HashMap;
@@ -12,8 +10,8 @@ mod subscrypt {
     use ink_storage::{collections};
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
-    use ink_env::{Error, AccountId as Account};
-    use sha2::Sha256;
+    use ink_env::{Error as Er, AccountId as Account};
+    use ink_env::hash::Keccak256;
     use ink_prelude::vec::Vec;
     use ink_storage::{
         traits::{
@@ -23,6 +21,15 @@ mod subscrypt {
         Lazy,
     };
     use std::convert::TryInto;
+
+    #[derive(Debug, PartialEq, Eq, scale::Encode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum Error {
+        /// Returned if user does not existed.
+        UserNotFound,
+        /// Returned if not enough allowance to fulfill a request is available.
+        InsufficientAllowance,
+    }
 
     #[derive(SpreadLayout, PackedLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
     struct SubscriptionRecord {
@@ -201,6 +208,7 @@ mod subscrypt {
                     joined_time: self.env().block_timestamp(),
                     subs_crypt_pass_hash: "".to_string(),
                 });
+
             }
             let mut user: &mut User = self.users.get_mut(&caller).unwrap();
             let number: usize = plan_index.try_into().unwrap();
@@ -215,6 +223,10 @@ mod subscrypt {
 
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
+                self.records.insert((caller, provider_address), PlanRecord {
+                    subscription_records: Vec::new(),
+                    pass_hash: pass
+                });
             }
 
             let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
@@ -235,8 +247,6 @@ mod subscrypt {
                 refunded: false,
             };
             plan_record.subscription_records.push(record);
-
-            plan_record.pass_hash = pass;
 
             let addr: Account = self.providers.get(&provider_address).unwrap().money_address;
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
@@ -292,9 +302,26 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) {
-            // let mut hasher = Sha256::new();
-            // hasher.update(b"hello world");
-            // let result = hasher.finalize();
+            // if !self.records.contains_key(&(user, provider)){
+            //     return Err(Error::UserNotFound);
+            // }
+
+            // let phrase : String;
+            // phrase.push_str(&token);
+            // phrase.push_str(&pass_phrase);
+            // let encodable = [
+            //     token,
+            //     pass_phrase
+            // ];
+            //
+            // let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            //
+            // if encoded == self.records.get(&(user, provider)).unwrap().pass_hash{
+            //     Ok(true)
+            // }
+            // Ok(false)
+
+
         }
 
         #[ink(message)]
@@ -329,9 +356,9 @@ mod subscrypt {
                 .map_err(|err| {
                     match err {
                         ink_env::Error::BelowSubsistenceThreshold => {
-                            Error::BelowSubsistenceThreshold
+                            Er::BelowSubsistenceThreshold
                         }
-                        _ => Error::TransferFailed,
+                        _ => Er::TransferFailed,
                     }
                 });
         }
