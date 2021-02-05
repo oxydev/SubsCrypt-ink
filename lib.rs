@@ -205,7 +205,7 @@ mod subscrypt {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
                     joined_time: self.env().block_timestamp(),
-                    subs_crypt_pass_hash: "".to_string(),
+                    subs_crypt_pass_hash: pass,
                 });
             }
             let mut user: &mut User = self.users.get_mut(&caller).unwrap();
@@ -315,7 +315,12 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(&self, caller: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
-            //self.my_value_or_zero(&self.env().caller())
+            let encodable = [
+                token,
+                phrase
+            ];
+            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            assert_eq!(encoded,self.users.get(&caller).unwrap().subs_crypt_pass_hash,"Wrong auth");
             return self.retrieve_whole_data(caller);
         }
 
@@ -356,7 +361,12 @@ mod subscrypt {
 
         #[ink(message)]
         pub fn retrieve_data_with_password(&self, caller: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
-            //check_password
+            let encodable = [
+                token,
+                phrase
+            ];
+            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash ,"Wrong auth");
             return self.retrieve_data(caller, provider_address);
         }
 
