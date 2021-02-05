@@ -28,6 +28,7 @@ mod subscrypt {
         Lazy,
     };
     use std::convert::TryInto;
+    use ink_env::hash::Keccak256;
 
     #[derive(Debug, PartialEq, Eq, scale::Encode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
@@ -52,7 +53,7 @@ mod subscrypt {
     #[derive(SpreadLayout, PackedLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
     struct PlanRecord {
         subscription_records: Vec<SubscriptionRecord>,
-        pass_hash: String,
+        pass_hash: [u8;32],
     }
 
     #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
@@ -78,7 +79,7 @@ mod subscrypt {
     struct User {
         list_of_providers: Vec<Account>,
         joined_time: u64,
-        subs_crypt_pass_hash: String,
+        subs_crypt_pass_hash: [u8;32],
     }
 
     #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
@@ -205,7 +206,7 @@ mod subscrypt {
         }
 
         #[ink(message, payable)]
-        pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: String, metadata: String) {
+        pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8;32], metadata: String) {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             let value: u128 = self.env().transferred_balance();
@@ -264,7 +265,7 @@ mod subscrypt {
         }
 
         #[ink(message)]
-        pub fn set_subscrypt_pass(&mut self, pass: String) {
+        pub fn set_subscrypt_pass(&mut self, pass: [u8;32]) {
             assert!(self.users.contains_key(&self.env().caller()));
             self.users.get_mut(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
@@ -303,32 +304,24 @@ mod subscrypt {
                 self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value);
             }
 
-            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy);
+            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy /1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
         #[ink(message)]
-        pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) {
-            // if !self.records.contains_key(&(user, provider)){
-            //     return Err(Error::UserNotFound);
-            // }
-
-            // let phrase : String;
-            // phrase.push_str(&token);
-            // phrase.push_str(&pass_phrase);
-            // let encodable = [
-            //     token,
-            //     pass_phrase
-            // ];
-            //
-            // let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
-            //
-            // if encoded == self.records.get(&(user, provider)).unwrap().pass_hash{
-            //     Ok(true)
-            // }
-            // Ok(false)
-
-
+        pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String)->bool {
+            if !self.records.contains_key(&(user, provider)){
+                return false;
+            }
+            let encodable = [
+                token,
+                pass_phrase
+            ];
+            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            if encoded == self.records.get(&(user, provider)).unwrap().pass_hash{
+                return true;
+            }
+            return false;
         }
 
         #[ink(message)]
@@ -628,7 +621,7 @@ mod subscrypt {
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
-                "testpass".to_string(),
+                [0;32],
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
@@ -685,7 +678,7 @@ mod subscrypt {
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
-                "testpass".to_string(),
+                [0;32],
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.records.get(&(accounts.bob,accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
