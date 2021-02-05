@@ -492,7 +492,7 @@ mod subscrypt {
         }
 
         #[ink::test]
-        fn editplan_works() {
+        fn edit_plan_works() {
             let mut subsCrypt = Subscrypt::new();
 
             let accounts =
