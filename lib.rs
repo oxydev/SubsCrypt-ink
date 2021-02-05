@@ -179,7 +179,7 @@ mod subscrypt {
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let mut provider = self.providers.get_mut(&caller).unwrap();
             let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
-            // let mut plan: PlanConsts = *(provider.plans.get(number).unwrap());
+
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
@@ -253,7 +253,6 @@ mod subscrypt {
             self.transfer(self.env().caller(), consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
 
             self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
-            //self.providers.get_mut(&provider_address).unwrap().payment_manager.add_entry((self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000);
         }
 
         #[ink(message)]
