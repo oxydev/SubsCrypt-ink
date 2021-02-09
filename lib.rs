@@ -18,22 +18,14 @@ mod subscrypt {
             PackedLayout,
             SpreadLayout,
         },
-        Lazy,
     };
     use core::convert::TryInto;
     use ink_prelude::string::String;
-    #[derive(Debug, PartialEq, Eq, scale::Encode,scale_info::TypeInfo)]
-//    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-    pub enum Error {
-        /// Returned if user does not existed.
-        UserNotFound,
-        /// Returned if not enough allowance to fulfill a request is available.
-        InsufficientAllowance,
-    }
 
-    #[derive(scale::Encode,scale::Decode,SpreadLayout, PackedLayout,Debug)]
+
+    #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     pub struct SubscriptionRecord {
-        provider: Account,
+        provider: u128,
         plan: PlanConsts,
         plan_index: u128,
         subscription_time: u64,
@@ -42,13 +34,13 @@ mod subscrypt {
         refunded: bool,
     }
 
-    #[derive(scale::Encode,scale::Decode,SpreadLayout,PackedLayout, Debug)]
+    #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     struct PlanRecord {
         subscription_records: Vec<SubscriptionRecord>,
-        pass_hash: [u8;32],
+        pass_hash: [u8; 32],
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug)]
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct PlanConsts {
         duration: u64,
         active_session_limit: u128,
@@ -57,28 +49,28 @@ mod subscrypt {
         disabled: bool,
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug)]
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct Provider {
         plans: Vec<PlanConsts>,
-        money_address: Account,
+        money_address: u128,
         payment_manager: LinkedList,
     }
 
-    #[derive(scale::Encode,scale::Decode, SpreadLayout, PackedLayout, Debug)]
+    #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     struct User {
-        list_of_providers: Vec<Account>,
+        list_of_providers: Vec<u128>,
         joined_time: u64,
-        subs_crypt_pass_hash: [u8;32],
+        subs_crypt_pass_hash: [u8; 32],
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct LinkedList {
         head: u64,
         back: u64,
         length: u128,
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct Object {
         number: u128,
         next_day: u64,
@@ -87,8 +79,11 @@ mod subscrypt {
     #[ink(storage)]
 //    #[derive(scale_info::TypeInfo)]
     pub struct Subscrypt {
+        index_counter: u128,
         start_time: u64,
         provider_register_fee: u128,
+        index_to_address: HashMap<u128, Account>,
+        address_to_index: HashMap<Account, u128>,
         providers: HashMap<Account, Provider>,
         objects: HashMap<(Account, u64), Object>,
         users: HashMap<Account, User>,
@@ -101,9 +96,12 @@ mod subscrypt {
         #[ink(constructor)]
         pub fn new() -> Self {
             Self {
+                index_counter: 0,
                 start_time: Self::env().block_timestamp(),
                 provider_register_fee: 100,
-                providers: ink_storage::collections::HashMap::new(),
+                index_to_address: HashMap::new(),
+                address_to_index: HashMap::new(),
+                providers: HashMap::new(),
                 users: ink_storage::collections::HashMap::new(),
                 objects: ink_storage::collections::HashMap::new(),
                 records: ink_storage::collections::HashMap::new(),
@@ -114,8 +112,11 @@ mod subscrypt {
         #[ink(constructor)]
         pub fn default() -> Self {
             Self {
+                index_counter: 0,
                 start_time: 0,
                 provider_register_fee: 0,
+                index_to_address: HashMap::new(),
+                address_to_index: HashMap::new(),
                 providers: Default::default(),
                 users: Default::default(),
                 objects: Default::default(),
@@ -129,10 +130,27 @@ mod subscrypt {
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
+            let mut index = 0;
+
+            if !self.address_to_index.contains_key(&caller) {
+                self.index_counter += 1;
+                self.address_to_index.insert(caller, index);
+                self.index_to_address.insert(index, caller);
+            }
+
+
+            if self.address_to_index.contains_key(&address) {
+                index = *self.address_to_index.get(&address).unwrap();
+            } else {
+                self.index_counter += 1;
+                index = self.index_counter;
+                self.address_to_index.insert(address, index);
+                self.index_to_address.insert(index, address);
+            }
 
             let mut provider = Provider {
                 plans: Vec::new(),
-                money_address: address,
+                money_address: index,
                 payment_manager: LinkedList::new(),
             };
 
@@ -194,7 +212,7 @@ mod subscrypt {
         }
 
         #[ink(message, payable)]
-        pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8;32], metadata: String) {
+        pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8; 32], metadata: String) {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             let value: u128 = self.env().transferred_balance();
@@ -217,7 +235,7 @@ mod subscrypt {
             //assert!(!self.check_subscription(self, caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
             if !self.records.contains_key(&(caller, provider_address)) {
-                user.list_of_providers.push(provider_address);
+                user.list_of_providers.push(*self.address_to_index.get(&provider_address).unwrap());
                 self.records.insert((caller, provider_address), PlanRecord {
                     subscription_records: Vec::new(),
                     pass_hash: pass,
@@ -228,7 +246,7 @@ mod subscrypt {
             self.plan_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
 
             let record: SubscriptionRecord = SubscriptionRecord {
-                provider: provider_address,
+                provider: *self.address_to_index.get(&provider_address).unwrap(),
                 plan: PlanConsts {
                     duration: consts.duration,
                     active_session_limit: consts.active_session_limit,
@@ -243,7 +261,7 @@ mod subscrypt {
             };
             plan_record.subscription_records.push(record);
 
-            let addr: Account = self.providers.get(&provider_address).unwrap().money_address;
+            let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
             self.transfer(self.env().caller(), consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
 
@@ -251,7 +269,7 @@ mod subscrypt {
         }
 
         #[ink(message)]
-        pub fn set_subscrypt_pass(&mut self, pass: [u8;32]) {
+        pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
             assert!(self.users.contains_key(&self.env().caller()));
             self.users.get_mut(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
@@ -287,16 +305,17 @@ mod subscrypt {
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-                self.transfer(self.providers.get(&provider_address).unwrap().money_address, transfer_value);
+
+                self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), transfer_value);
             }
 
-            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy /1000);
+            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy / 1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
         #[ink(message)]
-        pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String)->bool {
-            if !self.records.contains_key(&(user, provider)){
+        pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) -> bool {
+            if !self.records.contains_key(&(user, provider)) {
                 return false;
             }
             let encodable = [
@@ -304,7 +323,7 @@ mod subscrypt {
                 pass_phrase
             ];
             let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
-            if encoded == self.records.get(&(user, provider)).unwrap().pass_hash{
+            if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
                 return true;
             }
             return false;
@@ -317,7 +336,7 @@ mod subscrypt {
                 phrase
             ];
             let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
-            assert_eq!(encoded,self.users.get(&caller).unwrap().subs_crypt_pass_hash,"Wrong auth");
+            assert_eq!(encoded, self.users.get(&caller).unwrap().subs_crypt_pass_hash, "Wrong auth");
             return self.retrieve_whole_data(caller);
         }
 
@@ -332,7 +351,7 @@ mod subscrypt {
             let mut data: Vec<SubscriptionRecord> = Vec::new();
             let user: &User = self.users.get(&caller).unwrap();
             for i in 0..user.list_of_providers.len() {
-                let plan_records: &PlanRecord = self.records.get(&(caller, user.list_of_providers[i])).unwrap();
+                let plan_records: &PlanRecord = self.records.get(&(caller, *self.index_to_address.get(&user.list_of_providers[i]).unwrap())).unwrap();
                 for i in 0..plan_records.subscription_records.len() {
                     let k = SubscriptionRecord {
                         provider: plan_records.subscription_records[i].provider,
@@ -363,7 +382,7 @@ mod subscrypt {
                 phrase
             ];
             let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
-            assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash ,"Wrong auth");
+            assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash, "Wrong auth");
             return self.retrieve_data(caller, provider_address);
         }
 
@@ -558,7 +577,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
         }
 
         #[ink::test]
@@ -589,7 +608,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
 
             subsCrypt.edit_plan(
                 1,
@@ -604,7 +623,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().max_refund_percent_policy, 500);
 
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
         }
 
         #[ink::test]
@@ -637,13 +656,14 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
             subsCrypt.change_disable(1);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, true);
 
             subsCrypt.change_disable(1);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
         }
+
         #[ink::test]
         fn subscribe_works() {
             let mut subsCrypt = Subscrypt::new();
@@ -674,7 +694,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
 
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
@@ -689,11 +709,10 @@ mod subscrypt {
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
-                [0;32],
+                [0; 32],
                 "nothing important".to_string(),
             );
-            assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
-
+            assert_eq!(subsCrypt.index_to_address.get(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap()).unwrap(), &accounts.alice);
         }
 
         #[ink::test]
@@ -715,7 +734,7 @@ mod subscrypt {
                 callee,
                 100000,
                 100,
-                data
+                data,
             );
 
             subsCrypt.provider_register(
@@ -730,7 +749,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
-            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
 
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
@@ -746,19 +765,16 @@ mod subscrypt {
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
-                [0;32],
+                [0; 32],
                 "nothing important".to_string(),
             );
-            assert_eq!(subsCrypt.records.get(&(accounts.bob,accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
 
             subsCrypt.refund(
                 accounts.alice,
-                1
+                1,
             );
-            assert_eq!(subsCrypt.records.get(&(accounts.bob,accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, true);
-
-
-
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, true);
         }
     }
 }
