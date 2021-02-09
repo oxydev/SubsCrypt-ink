@@ -5,22 +5,31 @@ authors = ["[your_name] <[your_email]>"]
 edition = "2018"
 
 [dependencies]
-ink_metadata = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_metadata", default-features = false, features = ["derive"], optional = true }
-ink_primitives = { git = "https://github.com/hicommonwealth/ink", branch = "master", default-features = false }
-#sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-ink_env = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_env", default-features = false }
-ink_storage = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_storage", default-features = false }
-ink_lang = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_lang", default-features = false }
-ink_prelude = {  git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_prelude", default-features = false }
-#scale-info = "0.3.0"
-#serde = { version = "1.0", default-features = false }
-scale = { package = "parity-scale-codec",  default-features = false, features = ["derive"] }
-#scale-info = { version = "0.3.0", default-features = false, features = ["derive"] }
-#sha2 = "0.8.3"
-#serde = { version = "1.0.114", default-features = false, features = ["derive", "alloc"] }
-#impl-serde = "0.3.1"
-#derive_more = { version = "0.99", default-features = false, features = ["from"] }
-scale-info = { version = "0.6", default-features = false, features = ["derive"] }
+ink_primitives = { version = "3.0.0-rc2", path = "crates/primitives", default-features = false }
+ink_metadata = { version = "3.0.0-rc2", path = "crates/metadata", default-features = false, features = ["derive"], optional = true }
+ink_env = { version = "3.0.0-rc2", path = "crates/env", default-features = false }
+ink_storage = { version = "3.0.0-rc2", path = "crates/storage", default-features = false }
+ink_lang = { version = "3.0.0-rc2", path = "crates/lang", default-features = false }
+ink_prelude = { version ="3.0.0-rc2", path = "crates/prelude",  default-features = false  }
+scale = { package = "parity-scale-codec", version = "2.0", default-features = false, features = ["derive"] }
+scale-info = { version = "0.5", default-features = false, features = ["derive"], optional = true }
+
+#ink_metadata = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_metadata", default-features = false, features = ["derive"], optional = true }
+#ink_primitives = { git = "https://github.com/hicommonwealth/ink", branch = "master", default-features = false }
+##sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+#ink_env = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_env", default-features = false }
+#ink_storage = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_storage", default-features = false }
+#ink_lang = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_lang", default-features = false }
+#ink_prelude = {  git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_prelude", default-features = false }
+##scale-info = "0.3.0"
+##serde = { version = "1.0", default-features = false }
+#scale = { package = "parity-scale-codec",  default-features = false, features = ["derive"] }
+##scale-info = { version = "0.3.0", default-features = false, features = ["derive"] }
+##sha2 = "0.8.3"
+##serde = { version = "1.0.114", default-features = false, features = ["derive", "alloc"] }
+##impl-serde = "0.3.1"
+##derive_more = { version = "0.99", default-features = false, features = ["from"] }
+#scale-info = { version = "0.6", default-features = false, features = ["derive"] }
 #[dev-dependencies]
 #pretty_assertions = "0.6.1"
 
