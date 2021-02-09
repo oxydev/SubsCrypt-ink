@@ -9,7 +9,7 @@ mod subscrypt {
     use ink_storage::{collections};
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
-    use ink_env::{Error as Er, AccountId,AccountIndex};
+    use ink_env::{Error as Er, AccountId as Account};
     //use sp_runtime::{MultiAddress as Account};
     use ink_env::hash::Keccak256;
     use ink_prelude::vec::Vec;
@@ -31,9 +31,9 @@ mod subscrypt {
         InsufficientAllowance,
     }
 
-    #[derive(scale::Encode,scale::Decode,SpreadLayout, PackedLayout, scale_info::TypeInfo,Debug)]
+    #[derive(scale::Encode,scale::Decode,SpreadLayout, PackedLayout,Debug)]
     pub struct SubscriptionRecord {
-        provider: sp_runtime::MultiAddress<AccountId,AccountIndex>,
+        provider: Account,
         plan: PlanConsts,
         plan_index: u128,
         subscription_time: u64,
@@ -42,13 +42,13 @@ mod subscrypt {
         refunded: bool,
     }
 
-    #[derive(scale::Encode,scale::Decode,SpreadLayout,PackedLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,SpreadLayout,PackedLayout, Debug)]
     struct PlanRecord {
         subscription_records: Vec<SubscriptionRecord>,
         pass_hash: [u8;32],
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug)]
     struct PlanConsts {
         duration: u64,
         active_session_limit: u128,
@@ -57,16 +57,16 @@ mod subscrypt {
         disabled: bool,
     }
 
-    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug)]
     struct Provider {
         plans: Vec<PlanConsts>,
-        money_address: MultiAddress<AccountId,AccountIndex>,
+        money_address: Account,
         payment_manager: LinkedList,
     }
 
-    #[derive(scale::Encode,scale::Decode, SpreadLayout, PackedLayout, Debug,scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode, SpreadLayout, PackedLayout, Debug)]
     struct User {
-        list_of_providers: Vec<MultiAddress<AccountId,AccountIndex>>,
+        list_of_providers: Vec<Account>,
         joined_time: u64,
         subs_crypt_pass_hash: [u8;32],
     }
@@ -89,12 +89,12 @@ mod subscrypt {
     pub struct Subscrypt {
         start_time: u64,
         provider_register_fee: u128,
-        providers: HashMap<MultiAddress<AccountId,AccountIndex>, Provider>,
-        objects: HashMap<(MultiAddress<AccountId,AccountIndex>, u64), Object>,
-        users: HashMap<MultiAddress<AccountId,AccountIndex>, User>,
-        records: HashMap<(MultiAddress<AccountId,AccountIndex>, MultiAddress<AccountId,AccountIndex>), PlanRecord>,
+        providers: HashMap<Account, Provider>,
+        objects: HashMap<(Account, u64), Object>,
+        users: HashMap<Account, User>,
+        records: HashMap<(Account, Account), PlanRecord>,
         // first account is user the next one is provider
-        plan_index_to_record_index: HashMap<(MultiAddress<AccountId,AccountIndex>, MultiAddress<AccountId,AccountIndex>, u128), u128>,
+        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,
     }
 
     impl Subscrypt {
@@ -125,7 +125,7 @@ mod subscrypt {
         }
 
         #[ink(message, payable)]
-        pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: MultiAddress<AccountId,AccountIndex>) {
+        pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");

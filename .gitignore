@@ -1,4 +1,4 @@
-# Ignore build artifacts from the local tests sub-crate.
+# Ignore build artifacts from the local sub-crate.
 /target/
 
 # Ignore backup files creates by cargo fmt.

@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 ink_metadata = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_metadata", default-features = false, features = ["derive"], optional = true }
 ink_primitives = { git = "https://github.com/hicommonwealth/ink", branch = "master", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+#sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 ink_env = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_env", default-features = false }
 ink_storage = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_storage", default-features = false }
 ink_lang = { git = "https://github.com/hicommonwealth/ink", branch = "master", package = "ink_lang", default-features = false }
