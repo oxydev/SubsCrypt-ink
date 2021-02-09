@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//#![feature(type_ascription)]
 use ink_lang as ink;
 
 use ink_storage::collections::HashMap;
@@ -10,7 +9,8 @@ mod subscrypt {
     use ink_storage::{collections};
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
-    use ink_env::{Error as Er, AccountId as Account};
+    use ink_env::{Error as Er, AccountId,AccountIndex};
+    //use sp_runtime::{MultiAddress as Account};
     use ink_env::hash::Keccak256;
     use ink_prelude::vec::Vec;
     use ink_storage::{
@@ -20,10 +20,10 @@ mod subscrypt {
         },
         Lazy,
     };
-    use std::convert::TryInto;
-
-    #[derive(Debug, PartialEq, Eq, scale::Encode)]
-    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    use core::convert::TryInto;
+    use ink_prelude::string::String;
+    #[derive(Debug, PartialEq, Eq, scale::Encode,scale_info::TypeInfo)]
+//    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum Error {
         /// Returned if user does not existed.
         UserNotFound,
@@ -31,9 +31,9 @@ mod subscrypt {
         InsufficientAllowance,
     }
 
-    #[derive(SpreadLayout, PackedLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
-    struct SubscriptionRecord {
-        provider: Account,
+    #[derive(scale::Encode,scale::Decode,SpreadLayout, PackedLayout, scale_info::TypeInfo,Debug)]
+    pub struct SubscriptionRecord {
+        provider: sp_runtime::MultiAddress<AccountId,AccountIndex>,
         plan: PlanConsts,
         plan_index: u128,
         subscription_time: u64,
@@ -42,13 +42,13 @@ mod subscrypt {
         refunded: bool,
     }
 
-    #[derive(SpreadLayout, PackedLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,SpreadLayout,PackedLayout, Debug,scale_info::TypeInfo)]
     struct PlanRecord {
         subscription_records: Vec<SubscriptionRecord>,
         pass_hash: [u8;32],
     }
 
-    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
     struct PlanConsts {
         duration: u64,
         active_session_limit: u128,
@@ -57,47 +57,44 @@ mod subscrypt {
         disabled: bool,
     }
 
-    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
     struct Provider {
         plans: Vec<PlanConsts>,
-        money_address: Account,
+        money_address: MultiAddress<AccountId,AccountIndex>,
         payment_manager: LinkedList,
     }
 
-    #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
-    #[cfg_attr(
-    feature = "std",
-    )]
+    #[derive(scale::Encode,scale::Decode, SpreadLayout, PackedLayout, Debug,scale_info::TypeInfo)]
     struct User {
-        list_of_providers: Vec<Account>,
+        list_of_providers: Vec<MultiAddress<AccountId,AccountIndex>>,
         joined_time: u64,
         subs_crypt_pass_hash: [u8;32],
     }
 
-    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
     struct LinkedList {
         head: u64,
         back: u64,
         length: u128,
     }
 
-    #[derive(PackedLayout, SpreadLayout, scale::Encode, scale::Decode, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode,scale::Decode,PackedLayout, SpreadLayout, Debug,scale_info::TypeInfo)]
     struct Object {
         number: u128,
         next_day: u64,
     }
 
     #[ink(storage)]
-    // #[derive(PackedLayout,scale::Encode,scale::Decode,scale_info::TypeInfo)]
+//    #[derive(scale_info::TypeInfo)]
     pub struct Subscrypt {
         start_time: u64,
         provider_register_fee: u128,
-        providers: HashMap<Account, Provider>,
-        objects: HashMap<(Account, u64), Object>,
-        users: HashMap<Account, User>,
-        records: HashMap<(Account, Account), PlanRecord>,
+        providers: HashMap<MultiAddress<AccountId,AccountIndex>, Provider>,
+        objects: HashMap<(MultiAddress<AccountId,AccountIndex>, u64), Object>,
+        users: HashMap<MultiAddress<AccountId,AccountIndex>, User>,
+        records: HashMap<(MultiAddress<AccountId,AccountIndex>, MultiAddress<AccountId,AccountIndex>), PlanRecord>,
         // first account is user the next one is provider
-        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,
+        plan_index_to_record_index: HashMap<(MultiAddress<AccountId,AccountIndex>, MultiAddress<AccountId,AccountIndex>, u128), u128>,
     }
 
     impl Subscrypt {
@@ -128,7 +125,7 @@ mod subscrypt {
         }
 
         #[ink(message, payable)]
-        pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
+        pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: MultiAddress<AccountId,AccountIndex>) {
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
@@ -349,7 +346,7 @@ mod subscrypt {
                         plan_index: plan_records.subscription_records[i].plan_index,
                         subscription_time: plan_records.subscription_records[i].subscription_time,
                         //meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted,
-                        meta_data_encrypted: "".to_string(),
+                        meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted.clone(),
                         refunded: plan_records.subscription_records[i].refunded,
                     };
                     data.push(k);
@@ -395,7 +392,7 @@ mod subscrypt {
                     plan_index: plan_records.subscription_records[i].plan_index,
                     subscription_time: plan_records.subscription_records[i].subscription_time,
                     //meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted,
-                    meta_data_encrypted: "".to_string(),
+                    meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted.clone(),
                     refunded: plan_records.subscription_records[i].refunded,
                 };
                 data.push(k);
