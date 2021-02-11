@@ -376,7 +376,7 @@ mod subscrypt {
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
             let mut time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
-            assert!(time_percent > record.plan.max_refund_percent_policy);
+            assert!(time_percent <= 1000);
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
             } else {
@@ -1447,11 +1447,19 @@ mod subscrypt {
                 [0; 32],
                 "nothing important".to_string(),
             );
+
             subsCrypt.subscribe(
                 accounts.alice,
                 2,
                 [0; 32],
                 "nothing important".to_string(),
+            );
+            test::push_execution_context::<Environment>(
+                accounts.eve,
+                callee,
+                10000,
+                10000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
             );
             subsCrypt.subscribe(
                 accounts.alice,
