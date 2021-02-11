@@ -305,7 +305,7 @@ mod subscrypt {
 
             assert_eq!(consts.price, value, "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-            assert!(!self.check_subscription(&caller, provider_address, plan_index), "You are already subscribed to this plan!");
+            assert!(!self.check_subscription(caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
             let mut user: &mut User = self.users.get_mut(&caller).unwrap();
             if !self.records.contains_key(&(caller, provider_address)) {
@@ -531,13 +531,13 @@ mod subscrypt {
             if !self.users.contains_key(&user) {
                 return false;
             }
-            if !self.records.contains_key(&(*user, provider_address)) {
+            if !self.records.contains_key(&(user, provider_address)) {
                 return false;
             }
-            if !self.plan_index_to_record_index.contains_key(&(*user, provider_address, plan_index)) {
+            if !self.plan_index_to_record_index.contains_key(&(user, provider_address, plan_index)) {
                 return false;
             }
-            let last_index: u128 = *self.plan_index_to_record_index.get(&(*user, provider_address, plan_index)).unwrap();
+            let last_index: u128 = *self.plan_index_to_record_index.get(&(user, provider_address, plan_index)).unwrap();
             let number: usize = last_index.try_into().unwrap();
             let record: &SubscriptionRecord = &self.records.get(&(user, provider_address)).unwrap().subscription_records[number];
             if record.plan_index != plan_index || record.refunded || record.plan.duration + record.subscription_time < self.env().block_timestamp()  {
