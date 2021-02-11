@@ -1,4 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+/// this contract is ink! implementation of SubsCrpt. more information here: https://github.com/w3f/Open-Grants-Program/blob/master/applications/SubsCrypt.md
+//#![crate_name = "doc"]
 
 use ink_lang as ink;
 
@@ -22,7 +24,13 @@ mod subscrypt {
     use core::convert::TryInto;
     use ink_prelude::string::String;
 
-
+    /// this struct represents a subscription record
+    /// # fields:
+    /// * provider : provider address of this record
+    /// * plan : plen consts
+    /// * plan_index : index of this plan in provider plans
+    /// * subscription_time : this stores start time of subscription
+    /// * meta_data_encrypted : user metadata with encryption
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     pub struct SubscriptionRecord {
         provider: u128,
@@ -34,12 +42,20 @@ mod subscrypt {
         refunded: bool,
     }
 
+    /// this struct stores user plan records
+    /// # fields:
+    /// * subscription_records : history of subscription
+    /// * pass_hash : hash of (token + pass_phrase) for authenticating user without wallet
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     struct PlanRecord {
         subscription_records: Vec<SubscriptionRecord>,
         pass_hash: [u8; 32],
     }
 
+    /// this struct stores data of plans
+    /// # fields:
+    /// * duration : duration of plan
+    /// * active_session_limit :
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct PlanConsts {
         duration: u64,
@@ -49,6 +65,11 @@ mod subscrypt {
         disabled: bool,
     }
 
+    /// this struct represents a provider
+    /// # fields:
+    /// * plans : array of plans that this provider have
+    /// * money_address : provider earned money will be sent to this address
+    /// * payment_manager : struct for handling refund requests
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct Provider {
         plans: Vec<PlanConsts>,
@@ -56,13 +77,22 @@ mod subscrypt {
         payment_manager: LinkedList,
     }
 
+    /// this struct represents a user
+    /// # fields:
+    /// * list_of_providers : list of providers
+    /// * joined_date : when this user joined the platform
+    /// * subs_crypt_pass_hash : pass hash for retrieve data
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     struct User {
         list_of_providers: Vec<u128>,
-        joined_time: u64,
+        joined_date: u64,
         subs_crypt_pass_hash: [u8; 32],
     }
 
+    /// struct for handling payments of refund
+    /// * head : head of linked list
+    /// * back : back of linked list
+    /// * length : length of linked list
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct LinkedList {
         head: u64,
@@ -70,28 +100,47 @@ mod subscrypt {
         length: u128,
     }
 
+    /// struct that represents a payment admission
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct Object {
         number: u128,
         next_day: u64,
     }
 
+    /// main struct of contract
+    /// # fields:
+    /// * index_counter : counter for index_to_address hashmap
+    /// * start_time : start time of contract
+    /// * provider_register_fee : each provider should pay the fee to use contract
+    /// * index_to_address and address_to_index : for indexing addresses
+    /// * providers : the hashmap that stores providers data
+    /// * users : the hashmap that stores users data
+    /// * objects : the hashmap that stores payment admissions data
+    /// * records : the hashmap that stores user's subscription records data
+    /// * plan_index_to_record_index : the hashmap that stores user's last plan index for each plan index
     #[ink(storage)]
     pub struct Subscrypt {
         index_counter: u128,
         start_time: u64,
         provider_register_fee: u128,
         index_to_address: HashMap<u128, Account>,
+        // index -> AccountId
         address_to_index: HashMap<Account, u128>,
+        // AccountId -> index
         providers: HashMap<Account, Provider>,
-        objects: HashMap<(Account, u64), Object>,
+        // (provider AccountId) -> provider data
         users: HashMap<Account, User>,
+        // (user AccountId) -> user data
+        objects: HashMap<(Account, u64), Object>,
+        // (provider AccountId , day_id) -> payment admission
         records: HashMap<(Account, Account), PlanRecord>,
-        // first account is user the next one is provider
-        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,
+        // (user AccountId, provider AccountId) -> PlanRecord struct
+        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,// (user AccountId, provider AccountId, plan_index) -> index
     }
 
     impl Subscrypt {
+        /// constructor:
+        /// initializes the main struct data
         #[ink(constructor)]
         pub fn new() -> Self {
             Self {
@@ -108,6 +157,8 @@ mod subscrypt {
             }
         }
 
+        /// constructor:
+        /// initializes the main struct data
         #[ink(constructor)]
         pub fn default() -> Self {
             Self {
@@ -124,6 +175,13 @@ mod subscrypt {
             }
         }
 
+        /// provider_register : add a provider to contract storage
+        /// # arguments:
+        /// * durations : vector that contains "duration" amounts
+        /// * active_session_limits : vector that contains "active session limit" amounts
+        /// * prices : vector that contains "price" amounts
+        /// * max_refund_percent_policies : vector that contains "max refund policy" amounts
+        /// * address : money address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
             let caller = self.env().caller();
@@ -161,6 +219,14 @@ mod subscrypt {
             self.providers.insert(caller, provider);
         }
 
+
+        /// add_plan : add plans to provider storage
+        /// # arguments:
+        /// * durations : vector that contains "duration" amounts
+        /// * active_session_limits : vector that contains "active session limit" amounts
+        /// * prices : vector that contains "price" amounts
+        /// * max_refund_percent_policies : vector that contains "max refund policy" amounts
+        /// * address : money address for this provider
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             let caller = self.env().caller();
@@ -178,6 +244,13 @@ mod subscrypt {
             }
         }
 
+        /// edit_plan : edit a plan
+        /// # arguments:
+        /// * plan_index : index of plan in provider struct
+        /// * duration : new duration of plan
+        /// * active_session_limit : new active session limit of plan
+        /// * prices : new price of plan
+        /// * max_refund_percent_policies : new max refund policy of plan
         #[ink(message)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
@@ -194,6 +267,9 @@ mod subscrypt {
             plan.disabled = disabled;
         }
 
+        /// change_disable : disable and enable a plan
+        /// # arguments:
+        /// * plan_index : index of plan
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
@@ -203,6 +279,12 @@ mod subscrypt {
             self.providers.get_mut(&caller).unwrap().plans[number].disabled = !x;
         }
 
+        /// subscribe : users call this function to subscribe a plan
+        /// # arguments:
+        /// * provider_address : address of provider
+        /// * plan_index : index of plan
+        /// * pass : hash of (token + pass_phrase)
+        /// * metadata : extra metadata of the plan
         #[ink(message, payable)]
         pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8; 32], metadata: String) {
             let caller: Account = self.env().caller();
@@ -211,11 +293,10 @@ mod subscrypt {
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
-                    joined_time: self.env().block_timestamp(),
+                    joined_date: self.env().block_timestamp(),
                     subs_crypt_pass_hash: pass,
                 });
             }
-            let mut user: &mut User = self.users.get_mut(&caller).unwrap();
             let number: usize = plan_index.try_into().unwrap();
 
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
@@ -224,8 +305,9 @@ mod subscrypt {
 
             assert_eq!(consts.price, value, "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-            //assert!(!self.check_subscription(self, caller, provider_address, plan_index), "You are already subscribed to this plan!");
+            assert!(!self.check_subscription(&caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
+            let mut user: &mut User = self.users.get_mut(&caller).unwrap();
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(*self.address_to_index.get(&provider_address).unwrap());
                 self.records.insert((caller, provider_address), PlanRecord {
@@ -260,12 +342,16 @@ mod subscrypt {
             self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
         }
 
+        /// set_subscrypt_pass : users can change their pass_hash
+        /// # arguments:
+        /// * pass : hash of (token + pass_phrase)
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
             assert!(self.users.contains_key(&self.env().caller()));
             self.users.get_mut(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
 
+        /// withdraw : providers call this function to claim their unlocked money
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
@@ -277,15 +363,20 @@ mod subscrypt {
             return paid;
         }
 
+        /// refund : users can refund their money back
+        /// # arguments:
+        /// * provider_address : address of provider
+        /// * plan_index : index of plan
         #[ink(message)]
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
-
+            assert!(self.plan_index_to_record_index.contains_key(&(caller, provider_address, plan_index)));
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
             let mut time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
+            assert!(time_percent > record.plan.max_refund_percent_policy);
             if 1000 - time_percent > record.plan.max_refund_percent_policy {
                 time_percent = record.plan.max_refund_percent_policy;
             } else {
@@ -301,6 +392,12 @@ mod subscrypt {
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
+        /// check_auth : this function authenticates the user with token and pass_phrase
+        /// # arguments:
+        /// * user : user address
+        /// * provider : address of provider
+        /// * plan_index : index of plan
+        /// * token and pass_phrase : these are for authenticating
         #[ink(message)]
         pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) -> bool {
             if !self.records.contains_key(&(user, provider)) {
@@ -317,6 +414,11 @@ mod subscrypt {
             return false;
         }
 
+        /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
+        /// # arguments:
+        /// * caller : user address
+        /// * token and phrase : subscrypt passphrase
+        /// # return value: vector of subscription records
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(&self, caller: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
@@ -328,6 +430,8 @@ mod subscrypt {
             return self.retrieve_whole_data(caller);
         }
 
+        /// retrieve_whole_data_with_wallet : retrieve all user data.
+        /// # return value: vector of subscription records
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
@@ -352,7 +456,6 @@ mod subscrypt {
                         },
                         plan_index: plan_records.subscription_records[i].plan_index,
                         subscription_time: plan_records.subscription_records[i].subscription_time,
-                        //meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted,
                         meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted.clone(),
                         refunded: plan_records.subscription_records[i].refunded,
                     };
@@ -362,6 +465,12 @@ mod subscrypt {
             return data;
         }
 
+        /// retrieve_data_with_password : retrieve user data when wallet is not available.
+        /// # arguments:
+        /// * caller : user address
+        /// * provider_address : address of provider
+        /// * token and phrase : subscrypt passphrase
+        /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_password(&self, caller: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
@@ -373,6 +482,10 @@ mod subscrypt {
             return self.retrieve_data(caller, provider_address);
         }
 
+        /// retrieve_data_with_wallet : retrieve user data whit wallet.
+        /// # arguments:
+        /// * provider_address : address of provider
+        /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self, provider_address: Account) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
@@ -406,18 +519,25 @@ mod subscrypt {
             return data;
         }
 
+
+        /// check_subscription : provides can use this function to check if user has authority to plan or not
+        /// # arguments:
+        /// * user : user address
+        /// * provider_address
+        /// * plan_index
+        /// # return value: boolean that indicates the user has authority or not
         #[ink(message)]
         pub fn check_subscription(&self, user: Account, provider_address: Account, plan_index: u128) -> bool {
             if !self.users.contains_key(&user) {
                 return false;
             }
-            if !self.records.contains_key(&(user, provider_address)) {
+            if !self.records.contains_key(&(*user, provider_address)) {
                 return false;
             }
-            if !self.plan_index_to_record_index.contains_key(&(user, provider_address, plan_index)) {
+            if !self.plan_index_to_record_index.contains_key(&(*user, provider_address, plan_index)) {
                 return false;
             }
-            let last_index: u128 = *self.plan_index_to_record_index.get(&(user, provider_address, plan_index)).unwrap();
+            let last_index: u128 = *self.plan_index_to_record_index.get(&(*user, provider_address, plan_index)).unwrap();
             let number: usize = last_index.try_into().unwrap();
             let record: &SubscriptionRecord = &self.records.get(&(user, provider_address)).unwrap().subscription_records[number];
             if record.plan_index != plan_index || record.refunded || record.plan.duration + record.subscription_time < self.env().block_timestamp()  {
@@ -439,7 +559,12 @@ mod subscrypt {
                 });
         }
 
-        pub fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+        /// add_entry : add a payment entry to provider payment management linked list
+        /// # arguments:
+        /// * provider_address
+        /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
+        /// * amount : money amount
+        fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             if linked_list.length == 0 {
                 let object = Object { number: amount, next_day: day_id };
@@ -479,11 +604,20 @@ mod subscrypt {
             }
         }
 
-        pub fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+        /// remove_entry : when a user refunds this function removes its related entry
+        /// # arguments:
+        /// * provider_address
+        /// * day_id
+        /// * amount
+        fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             self.objects.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
         }
 
-        pub fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
+        /// process : when providers withdraw this function calculates the amount of money
+        /// # arguments:
+        /// * provider_address
+        /// * day_id
+        fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             let mut sum: u128 = 0;
             let mut cur_id: u64 = linked_list.head;
@@ -510,6 +644,7 @@ mod subscrypt {
             }
         }
     }
+
     #[cfg(test)]
     mod tests {
         use super::*;
