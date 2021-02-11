@@ -482,7 +482,7 @@ mod subscrypt {
         /// * caller : user address
         /// * provider_address : address of provider
         /// * token and phrase : subscrypt passphrase
-        /// # return value: vector of subscription records
+        /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_password(&self, caller: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
@@ -494,6 +494,10 @@ mod subscrypt {
             return self.retrieve_data(caller, provider_address);
         }
 
+        /// retrieve_data_with_wallet : retrieve user data whit wallet.
+        /// # arguments:
+        /// * provider_address : address of provider
+        /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self, provider_address: Account) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
@@ -528,6 +532,13 @@ mod subscrypt {
             return data;
         }
 
+
+        /// check_subscription : provides can use this function to check if user has authority to plan or not
+        /// # arguments:
+        /// * user : user address
+        /// * provider_address
+        /// * plan_index
+        /// # return value: boolean that indicates the user has authority or not
         #[ink(message)]
         #[feature(type_ascription)]
         pub fn check_subscription(&self, user: &Account, provider_address: Account, plan_index: u128) -> bool {
@@ -562,7 +573,11 @@ mod subscrypt {
                 });
         }
 
-
+        /// add_entry : add a payment entry to provider payment management linked list
+        /// # arguments:
+        /// * provider_address
+        /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
+        /// * amount : money amount
         fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             if linked_list.length == 0 {
@@ -603,10 +618,19 @@ mod subscrypt {
             }
         }
 
+        /// remove_entry : when a user refunds this function removes its related entry
+        /// # arguments:
+        /// * provider_address
+        /// * day_id
+        /// * amount
         fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             self.objects.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
         }
 
+        /// process : when providers withdraw this function calculates the amount of money
+        /// # arguments:
+        /// * provider_address
+        /// * day_id
         fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             let mut sum: u128 = 0;
