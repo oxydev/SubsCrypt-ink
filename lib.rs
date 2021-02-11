@@ -9,9 +9,9 @@ mod subscrypt {
     use ink_storage::{collections};
     use ink_storage::collections::HashMap;
     use ink_primitives::Key;
-    use ink_env::{Error as Er, AccountId as Account};
+    use ink_env::{Error as Er, AccountId as Account, debug_println};
     //use sp_runtime::{MultiAddress as Account};
-    use ink_env::hash::Keccak256;
+    use ink_env::hash::{Sha2x256};
     use ink_prelude::vec::Vec;
     use ink_storage::{
         traits::{
@@ -77,7 +77,6 @@ mod subscrypt {
     }
 
     #[ink(storage)]
-//    #[derive(scale_info::TypeInfo)]
     pub struct Subscrypt {
         index_counter: u128,
         start_time: u64,
@@ -135,10 +134,7 @@ mod subscrypt {
             if !self.address_to_index.contains_key(&caller) {
                 self.index_counter += 1;
                 self.address_to_index.insert(caller, index);
-                self.index_to_address.insert(index, caller);
-            }
-
-
+                self.index_to_address.insert(index, caller); }
             if self.address_to_index.contains_key(&address) {
                 index = *self.address_to_index.get(&address).unwrap();
             } else {
@@ -147,13 +143,11 @@ mod subscrypt {
                 self.address_to_index.insert(address, index);
                 self.index_to_address.insert(index, address);
             }
-
             let mut provider = Provider {
                 plans: Vec::new(),
                 money_address: index,
                 payment_manager: LinkedList::new(),
             };
-
             for i in 0..durations.len() {
                 let cons = PlanConsts {
                     duration: durations[i],
@@ -184,9 +178,7 @@ mod subscrypt {
             }
         }
 
-
         #[ink(message)]
-        #[feature(type_ascription)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
@@ -278,9 +270,7 @@ mod subscrypt {
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
-
             let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).try_into().unwrap());
-
             if paid > 0 {
                 self.transfer(caller, paid);
             }
@@ -305,10 +295,8 @@ mod subscrypt {
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-
                 self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), transfer_value);
             }
-
             self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy / 1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
@@ -322,7 +310,7 @@ mod subscrypt {
                 token,
                 pass_phrase
             ];
-            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
                 return true;
             }
@@ -335,7 +323,7 @@ mod subscrypt {
                 token,
                 phrase
             ];
-            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(encoded, self.users.get(&caller).unwrap().subs_crypt_pass_hash, "Wrong auth");
             return self.retrieve_whole_data(caller);
         }
@@ -371,7 +359,6 @@ mod subscrypt {
                     data.push(k);
                 }
             }
-
             return data;
         }
 
@@ -381,7 +368,7 @@ mod subscrypt {
                 token,
                 phrase
             ];
-            let encoded = self.env().hash_encoded::<Keccak256, _>(&encodable);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash, "Wrong auth");
             return self.retrieve_data(caller, provider_address);
         }
@@ -389,7 +376,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self, provider_address: Account) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
-            return self.retrieve_data(provider_address, caller);
+            return self.retrieve_data( caller,provider_address);
         }
 
         fn retrieve_data(&self, caller: Account, provider_address: Account) -> Vec<SubscriptionRecord> {
@@ -416,12 +403,10 @@ mod subscrypt {
                 };
                 data.push(k);
             }
-
             return data;
         }
 
         #[ink(message)]
-        #[feature(type_ascription)]
         pub fn check_subscription(&self, user: Account, provider_address: Account, plan_index: u128) -> bool {
             if !self.users.contains_key(&user) {
                 return false;
@@ -435,7 +420,7 @@ mod subscrypt {
             let last_index: u128 = *self.plan_index_to_record_index.get(&(user, provider_address, plan_index)).unwrap();
             let number: usize = last_index.try_into().unwrap();
             let record: &SubscriptionRecord = &self.records.get(&(user, provider_address)).unwrap().subscription_records[number];
-            if record.plan_index != plan_index || record.refunded || record.plan.duration + record.subscription_time > self.env().block_timestamp() {
+            if record.plan_index != plan_index || record.refunded || record.plan.duration + record.subscription_time < self.env().block_timestamp()  {
                 return false;
             }
             return true;
@@ -454,7 +439,6 @@ mod subscrypt {
                 });
         }
 
-
         pub fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             if linked_list.length == 0 {
@@ -464,12 +448,12 @@ mod subscrypt {
                 linked_list.back = day_id;
                 linked_list.length = linked_list.length + 1;
             } else if day_id < linked_list.head {
-                let object = Object { number: amount, next_day: day_id };
+                let object = Object { number: amount, next_day: linked_list.head };
                 linked_list.head = day_id;
                 self.objects.insert((provider_address, day_id), object);
                 linked_list.length = linked_list.length + 1;
             } else if day_id > linked_list.back {
-                self.objects.get_mut(&(provider_address, day_id)).unwrap().next_day = day_id;
+                self.objects.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
                 let object = Object { number: amount, next_day: day_id };
                 linked_list.back = day_id;
                 self.objects.insert((provider_address, day_id), object);
@@ -526,7 +510,6 @@ mod subscrypt {
             }
         }
     }
-
     #[cfg(test)]
     mod tests {
         use super::*;
@@ -535,6 +518,7 @@ mod subscrypt {
             test,
         };
         use ink_lang as ink;
+        use ink_env::hash::{Sha2x256, HashOutput};
 
         #[ink::test]
         fn constructor_works() {
@@ -547,7 +531,11 @@ mod subscrypt {
             let subsCrypt = Subscrypt::default();
             assert_eq!(subsCrypt.provider_register_fee, 0);
         }
-        // pub fn provider_register(&mut self, durations: Vec<u128>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: AccountId) {
+        #[ink::test]
+        fn linked_List_works() {
+            let linked = LinkedList::new();
+            assert_eq!(linked.back, 0);
+        }
 
         #[ink::test]
         fn provider_register_works() {
@@ -622,6 +610,50 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 10);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().max_refund_percent_policy, 500);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+        }
+
+        #[ink::test]
+        fn add_plan_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100,
+                100,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+            subsCrypt.add_plan(
+                vec![60 * 60 * 24 * 10],
+                vec![3],
+                vec![100000],
+                vec![500]
+            );
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().active_session_limit, 3);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().duration, 60 * 60 * 24 * 10);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().price, 100000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().max_refund_percent_policy, 500);
 
             assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
         }
@@ -716,6 +748,66 @@ mod subscrypt {
         }
 
         #[ink::test]
+        fn withdraw_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100,
+                100,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.index_to_address.get(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap()).unwrap(), &accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                0,
+                0,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            let amount= subsCrypt.withdraw();
+
+        }
+
+        #[ink::test]
         fn refund_works() {
             let mut subsCrypt = Subscrypt::new();
 
@@ -776,5 +868,478 @@ mod subscrypt {
             );
             assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, true);
         }
+
+        #[ink::test]
+        fn check_subscription_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+
+            assert_eq!(subsCrypt.check_subscription(accounts.bob,accounts.alice,1),true);
+        }
+
+
+        #[ink::test]
+        fn retrieve_data_with_wallet_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            let s = subsCrypt.retrieve_data_with_wallet(accounts.alice);
+            assert_eq!(s[0].provider,0);
+            assert_eq!(s[0].plan_index,1);
+            assert_eq!(s[0].plan.duration,60 * 600000 * 5);
+        }
+
+        #[ink::test]
+        fn retrieve_whole_data_with_wallet_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            let s = subsCrypt.retrieve_whole_data_with_wallet();
+            assert_eq!(s[0].provider,0);
+            assert_eq!(s[0].plan_index,1);
+            assert_eq!(s[0].plan.duration,60 * 600000 * 5);
+        }
+
+        #[ink::test]
+        fn retrieve_data_with_password_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            let t:String= "token".to_string();
+            let p:String="pass_phrase".to_string();
+            let encodable = [
+            t,
+            p
+            ];
+            let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+            ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                output,
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            let s = subsCrypt.retrieve_data_with_password(accounts.bob, accounts.alice, "token".parse().unwrap(), "pass_phrase".parse().unwrap());
+            assert_eq!(s[0].provider,0);
+            assert_eq!(s[0].plan_index,1);
+            assert_eq!(s[0].plan.duration,60 * 600000 * 5);
+
+        }
+
+        #[ink::test]
+        fn retrieve_whole_data_with_password_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            let t:String= "token".to_string();
+            let p:String="pass_phrase".to_string();
+            let encodable = [
+                t,
+                p
+            ];
+            let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+            ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                output,
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            let s = subsCrypt.retrieve_whole_data_with_password(accounts.bob, "token".parse().unwrap(), "pass_phrase".parse().unwrap());
+            assert_eq!(s[0].provider,0);
+            assert_eq!(s[0].plan_index,1);
+            assert_eq!(s[0].plan.duration,60 * 600000 * 5);
+
+        }
+        #[ink::test]
+        fn check_auth_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
+                0xCA, 0xFE, 0xBA, 0xBE,
+            ]));
+            data.push_arg(&accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                data,
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 *600000* 5],
+                vec![2, 2],
+                vec![10000, 50000],
+                vec![50, 100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            let t:String= "token".to_string();
+            let p:String="pass_phrase".to_string();
+            let encodable = [
+                t,
+                p
+            ];
+            let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+            ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                output,
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
+            let s = subsCrypt.check_auth(accounts.bob,accounts.alice, "token".parse().unwrap(), "pass_phrase".parse().unwrap());
+            assert_eq!(s,true);
+        }
+
+        #[ink::test]
+        fn add_entry_works() {
+            let mut subsCrypt = Subscrypt::new();
+
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100,
+                100,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+
+            subsCrypt.provider_register(
+                vec![60 * 60 * 24, 60 * 60 * 24 * 30,60 * 60 * 24 * 300,60 * 60 * 24 * 31],
+                vec![2, 2,2,2],
+                vec![10000, 50000,10000,10000],
+                vec![50, 100,200,100],
+                accounts.alice);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(0).unwrap().duration, 60 * 60 * 24);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().active_session_limit, 2);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
+            assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
+
+            assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
+
+
+            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                50000,
+                50000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                1,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            test::push_execution_context::<Environment>(
+                accounts.bob,
+                callee,
+                10000,
+                10000,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                0,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                2,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                0,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            subsCrypt.subscribe(
+                accounts.alice,
+                3,
+                [0; 32],
+                "nothing important".to_string(),
+            );
+            assert_eq!(subsCrypt.index_to_address.get(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap()).unwrap(), &accounts.alice);
+            test::push_execution_context::<Environment>(
+                accounts.alice,
+                callee,
+                100000,
+                100,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+            let amount = subsCrypt.process(accounts.alice,1000);
+        }
+
     }
 }
