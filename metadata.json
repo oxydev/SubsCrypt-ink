@@ -1,0 +1,1882 @@
+{
+  "metadataVersion": "0.1.0",
+  "source": {
+    "hash": "0x0346f6d28365a1bee8160f45207f779bb49fa4484de4326a2a766a654269b019",
+    "language": "ink! 3.0.0-rc2",
+    "compiler": "rustc 1.51.0-nightly"
+  },
+  "contract": {
+    "name": "SubsCrypt",
+    "version": "4.0.0-rc2",
+    "authors": [
+      "[your_name] <[your_email]>"
+    ]
+  },
+  "spec": {
+    "constructors": [
+      {
+        "args": [],
+        "docs": [],
+        "name": [
+          "new"
+        ],
+        "selector": "0xd183512b"
+      },
+      {
+        "args": [],
+        "docs": [],
+        "name": [
+          "default"
+        ],
+        "selector": "0x6a3712e2"
+      }
+    ],
+    "docs": [],
+    "events": [],
+    "messages": [
+      {
+        "args": [
+          {
+            "name": "durations",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 35
+            }
+          },
+          {
+            "name": "active_session_limits",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "name": "prices",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "name": "max_refund_percent_policies",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "name": "address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "provider_register"
+        ],
+        "payable": true,
+        "returnType": null,
+        "selector": "0xd2b7f89f"
+      },
+      {
+        "args": [
+          {
+            "name": "durations",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 35
+            }
+          },
+          {
+            "name": "active_session_limits",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "name": "prices",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "name": "max_refund_percent_policies",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 25
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "add_plan"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0xd0303b32"
+      },
+      {
+        "args": [
+          {
+            "name": "plan_index",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          },
+          {
+            "name": "duration",
+            "type": {
+              "displayName": [
+                "u64"
+              ],
+              "type": 2
+            }
+          },
+          {
+            "name": "active_session_limit",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          },
+          {
+            "name": "price",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          },
+          {
+            "name": "max_refund_percent_policy",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          },
+          {
+            "name": "disabled",
+            "type": {
+              "displayName": [
+                "bool"
+              ],
+              "type": 17
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "edit_plan"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x10be9fd7"
+      },
+      {
+        "args": [
+          {
+            "name": "plan_index",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "change_disable"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x32fd4299"
+      },
+      {
+        "args": [
+          {
+            "name": "provider_address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "plan_index",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          },
+          {
+            "name": "pass",
+            "type": {
+              "displayName": [],
+              "type": 9
+            }
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "subscribe"
+        ],
+        "payable": true,
+        "returnType": null,
+        "selector": "0xb35b0f6c"
+      },
+      {
+        "args": [
+          {
+            "name": "pass",
+            "type": {
+              "displayName": [],
+              "type": 9
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "set_subscrypt_pass"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x87952f4f"
+      },
+      {
+        "args": [],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "withdraw"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "u128"
+          ],
+          "type": 1
+        },
+        "selector": "0xb41251e9"
+      },
+      {
+        "args": [
+          {
+            "name": "provider_address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "plan_index",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "refund"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x65483da9"
+      },
+      {
+        "args": [
+          {
+            "name": "user",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "provider",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "token",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          },
+          {
+            "name": "pass_phrase",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "check_auth"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "bool"
+          ],
+          "type": 17
+        },
+        "selector": "0xbaf942e7"
+      },
+      {
+        "args": [
+          {
+            "name": "caller",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "token",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          },
+          {
+            "name": "phrase",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "retrieve_whole_data_with_password"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "Vec"
+          ],
+          "type": 30
+        },
+        "selector": "0x0dbe9e16"
+      },
+      {
+        "args": [],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "retrieve_whole_data_with_wallet"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "Vec"
+          ],
+          "type": 30
+        },
+        "selector": "0xf8269737"
+      },
+      {
+        "args": [
+          {
+            "name": "caller",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "provider_address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "token",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          },
+          {
+            "name": "phrase",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 32
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "retrieve_data_with_password"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "Vec"
+          ],
+          "type": 30
+        },
+        "selector": "0xf3b97381"
+      },
+      {
+        "args": [
+          {
+            "name": "provider_address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "retrieve_data_with_wallet"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "Vec"
+          ],
+          "type": 30
+        },
+        "selector": "0xaaac64b5"
+      },
+      {
+        "args": [
+          {
+            "name": "user",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "provider_address",
+            "type": {
+              "displayName": [
+                "Account"
+              ],
+              "type": 8
+            }
+          },
+          {
+            "name": "plan_index",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 1
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": false,
+        "name": [
+          "check_subscription"
+        ],
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "bool"
+          ],
+          "type": 17
+        },
+        "selector": "0xf2609244"
+      }
+    ]
+  },
+  "storage": {
+    "struct": {
+      "fields": [
+        {
+          "layout": {
+            "cell": {
+              "key": "0x0000000000000000000000000000000000000000000000000000000000000000",
+              "ty": 1
+            }
+          },
+          "name": "index_counter"
+        },
+        {
+          "layout": {
+            "cell": {
+              "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
+              "ty": 2
+            }
+          },
+          "name": "start_time"
+        },
+        {
+          "layout": {
+            "cell": {
+              "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+              "ty": 1
+            }
+          },
+          "name": "provider_register_fee"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0400000001000000000000000000000000000000000000000000000000000000",
+                                          "ty": 5
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0500000000000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0500000001000000000000000000000000000000000000000000000000000000",
+                          "ty": 7
+                        }
+                      },
+                      "offset": "0x0400000001000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "index_to_address"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0500000001000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0600000001000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0600000002000000000000000000000000000000000000000000000000000000",
+                                          "ty": 11
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0700000001000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0700000002000000000000000000000000000000000000000000000000000000",
+                          "ty": 12
+                        }
+                      },
+                      "offset": "0x0600000002000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "address_to_index"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0700000002000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0800000002000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0800000003000000000000000000000000000000000000000000000000000000",
+                                          "ty": 11
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0900000002000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0900000003000000000000000000000000000000000000000000000000000000",
+                          "ty": 13
+                        }
+                      },
+                      "offset": "0x0800000003000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "providers"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0900000003000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0a00000003000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0a00000004000000000000000000000000000000000000000000000000000000",
+                                          "ty": 19
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0b00000003000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0b00000004000000000000000000000000000000000000000000000000000000",
+                          "ty": 21
+                        }
+                      },
+                      "offset": "0x0a00000004000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "objects"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0b00000004000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0c00000004000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0c00000005000000000000000000000000000000000000000000000000000000",
+                                          "ty": 11
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0d00000004000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0d00000005000000000000000000000000000000000000000000000000000000",
+                          "ty": 23
+                        }
+                      },
+                      "offset": "0x0c00000005000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "users"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0d00000005000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x0e00000005000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x0e00000006000000000000000000000000000000000000000000000000000000",
+                                          "ty": 26
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x0f00000005000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x0f00000006000000000000000000000000000000000000000000000000000000",
+                          "ty": 28
+                        }
+                      },
+                      "offset": "0x0e00000006000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "records"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "cell": {
+                              "key": "0x0f00000006000000000000000000000000000000000000000000000000000000",
+                              "ty": 3
+                            }
+                          },
+                          "name": "header"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "cell": {
+                                      "key": "0x1000000006000000000000000000000000000000000000000000000000000000",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "len"
+                                },
+                                {
+                                  "layout": {
+                                    "array": {
+                                      "cellsPerElem": 1,
+                                      "layout": {
+                                        "cell": {
+                                          "key": "0x1000000007000000000000000000000000000000000000000000000000000000",
+                                          "ty": 33
+                                        }
+                                      },
+                                      "len": 4294967295,
+                                      "offset": "0x1100000006000000000000000000000000000000000000000000000000000000"
+                                    }
+                                  },
+                                  "name": "elems"
+                                }
+                              ]
+                            }
+                          },
+                          "name": "entries"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "keys"
+                },
+                {
+                  "layout": {
+                    "hash": {
+                      "layout": {
+                        "cell": {
+                          "key": "0x1100000007000000000000000000000000000000000000000000000000000000",
+                          "ty": 12
+                        }
+                      },
+                      "offset": "0x1000000007000000000000000000000000000000000000000000000000000000",
+                      "strategy": {
+                        "hasher": "Blake2x256",
+                        "postfix": "",
+                        "prefix": "0x696e6b20686173686d6170"
+                      }
+                    }
+                  },
+                  "name": "values"
+                }
+              ]
+            }
+          },
+          "name": "plan_index_to_record_index"
+        }
+      ]
+    }
+  },
+  "types": [
+    {
+      "def": {
+        "primitive": "u128"
+      }
+    },
+    {
+      "def": {
+        "primitive": "u64"
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "last_vacant",
+              "type": 4,
+              "typeName": "Index"
+            },
+            {
+              "name": "len",
+              "type": 4,
+              "typeName": "u32"
+            },
+            {
+              "name": "len_entries",
+              "type": 4,
+              "typeName": "u32"
+            }
+          ]
+        }
+      },
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Header"
+      ]
+    },
+    {
+      "def": {
+        "primitive": "u32"
+      }
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "type": 6,
+                  "typeName": "VacantEntry"
+                }
+              ],
+              "name": "Vacant"
+            },
+            {
+              "fields": [
+                {
+                  "type": 1,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Occupied"
+            }
+          ]
+        }
+      },
+      "params": [
+        1
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Entry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "next",
+              "type": 4,
+              "typeName": "Index"
+            },
+            {
+              "name": "prev",
+              "type": 4,
+              "typeName": "Index"
+            }
+          ]
+        }
+      },
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "VacantEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 8,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        8
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "type": 9,
+              "typeName": "[u8; 32]"
+            }
+          ]
+        }
+      },
+      "path": [
+        "ink_env",
+        "types",
+        "AccountId"
+      ]
+    },
+    {
+      "def": {
+        "array": {
+          "len": 32,
+          "type": 10
+        }
+      }
+    },
+    {
+      "def": {
+        "primitive": "u8"
+      }
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "type": 6,
+                  "typeName": "VacantEntry"
+                }
+              ],
+              "name": "Vacant"
+            },
+            {
+              "fields": [
+                {
+                  "type": 8,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Occupied"
+            }
+          ]
+        }
+      },
+      "params": [
+        8
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Entry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 1,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        1
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 14,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        14
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "plans",
+              "type": 15,
+              "typeName": "Vec<PlanConsts>"
+            },
+            {
+              "name": "money_address",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "payment_manager",
+              "type": 18,
+              "typeName": "LinkedList"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "Provider"
+      ]
+    },
+    {
+      "def": {
+        "sequence": {
+          "type": 16
+        }
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "duration",
+              "type": 2,
+              "typeName": "u64"
+            },
+            {
+              "name": "active_session_limit",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "price",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "max_refund_percent_policy",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "disabled",
+              "type": 17,
+              "typeName": "bool"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "PlanConsts"
+      ]
+    },
+    {
+      "def": {
+        "primitive": "bool"
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "head",
+              "type": 2,
+              "typeName": "u64"
+            },
+            {
+              "name": "back",
+              "type": 2,
+              "typeName": "u64"
+            },
+            {
+              "name": "length",
+              "type": 1,
+              "typeName": "u128"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "LinkedList"
+      ]
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "type": 6,
+                  "typeName": "VacantEntry"
+                }
+              ],
+              "name": "Vacant"
+            },
+            {
+              "fields": [
+                {
+                  "type": 20,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Occupied"
+            }
+          ]
+        }
+      },
+      "params": [
+        20
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Entry"
+      ]
+    },
+    {
+      "def": {
+        "tuple": [
+          8,
+          2
+        ]
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 22,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        22
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "number",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "next_day",
+              "type": 2,
+              "typeName": "u64"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "Object"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 24,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        24
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "list_of_providers",
+              "type": 25,
+              "typeName": "Vec<u128>"
+            },
+            {
+              "name": "joined_time",
+              "type": 2,
+              "typeName": "u64"
+            },
+            {
+              "name": "subs_crypt_pass_hash",
+              "type": 9,
+              "typeName": "[u8; 32]"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "User"
+      ]
+    },
+    {
+      "def": {
+        "sequence": {
+          "type": 1
+        }
+      }
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "type": 6,
+                  "typeName": "VacantEntry"
+                }
+              ],
+              "name": "Vacant"
+            },
+            {
+              "fields": [
+                {
+                  "type": 27,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Occupied"
+            }
+          ]
+        }
+      },
+      "params": [
+        27
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Entry"
+      ]
+    },
+    {
+      "def": {
+        "tuple": [
+          8,
+          8
+        ]
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "value",
+              "type": 29,
+              "typeName": "V"
+            },
+            {
+              "name": "key_index",
+              "type": 4,
+              "typeName": "KeyIndex"
+            }
+          ]
+        }
+      },
+      "params": [
+        29
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "hashmap",
+        "ValueEntry"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "subscription_records",
+              "type": 30,
+              "typeName": "Vec<SubscriptionRecord>"
+            },
+            {
+              "name": "pass_hash",
+              "type": 9,
+              "typeName": "[u8; 32]"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "PlanRecord"
+      ]
+    },
+    {
+      "def": {
+        "sequence": {
+          "type": 31
+        }
+      }
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "name": "provider",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "plan",
+              "type": 16,
+              "typeName": "PlanConsts"
+            },
+            {
+              "name": "plan_index",
+              "type": 1,
+              "typeName": "u128"
+            },
+            {
+              "name": "subscription_time",
+              "type": 2,
+              "typeName": "u64"
+            },
+            {
+              "name": "meta_data_encrypted",
+              "type": 32,
+              "typeName": "String"
+            },
+            {
+              "name": "refunded",
+              "type": 17,
+              "typeName": "bool"
+            }
+          ]
+        }
+      },
+      "path": [
+        "SubsCrypt",
+        "subscrypt",
+        "SubscriptionRecord"
+      ]
+    },
+    {
+      "def": {
+        "primitive": "str"
+      }
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "type": 6,
+                  "typeName": "VacantEntry"
+                }
+              ],
+              "name": "Vacant"
+            },
+            {
+              "fields": [
+                {
+                  "type": 34,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Occupied"
+            }
+          ]
+        }
+      },
+      "params": [
+        34
+      ],
+      "path": [
+        "ink_storage",
+        "collections",
+        "stash",
+        "Entry"
+      ]
+    },
+    {
+      "def": {
+        "tuple": [
+          8,
+          8,
+          1
+        ]
+      }
+    },
+    {
+      "def": {
+        "sequence": {
+          "type": 2
+        }
+      }
+    }
+  ]
+}
