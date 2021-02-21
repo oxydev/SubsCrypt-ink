@@ -13,7 +13,8 @@ ink_lang = { version = "3.0.0-rc2", path = "crates/lang", default-features = fal
 ink_prelude = { version ="3.0.0-rc2", path = "crates/prelude",  default-features = false  }
 scale = { package = "parity-scale-codec", version = "2.0", default-features = false, features = ["derive"] }
 scale-info = { version = "0.5", default-features = false, features = ["derive"], optional = false }
-
+#temp workaround because of problems in deps
+funty = {version = "=1.1", default-features = false}
 [lib]
 name = "SubsCrypt"
 path = "lib.rs"
