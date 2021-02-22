@@ -4,14 +4,10 @@
 
 use ink_lang as ink;
 
-use ink_storage::collections::HashMap;
-
 #[ink::contract]
 mod subscrypt {
-    use ink_storage::{collections};
     use ink_storage::collections::HashMap;
-    use ink_primitives::Key;
-    use ink_env::{Error as Er, AccountId as Account, debug_println};
+    use ink_env::{Error as Er, AccountId as Account, Error};
     use ink_env::hash::{Sha2x256};
     use ink_prelude::vec::Vec;
     use ink_storage::{
@@ -118,7 +114,7 @@ mod subscrypt {
     /// * records : the hashmap that stores user's subscription records data
     /// * plan_index_to_record_index : the hashmap that stores user's last plan index for each plan index
     #[ink(storage)]
-    pub struct Subscrypt {
+    pub struct subs_crypt {
         index_counter: u128,
         start_time: u64,
         provider_register_fee: u128,
@@ -137,7 +133,7 @@ mod subscrypt {
         plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,// (user AccountId, provider AccountId, plan_index) -> index
     }
 
-    impl Subscrypt {
+    impl subs_crypt {
         /// constructor:
         /// initializes the main struct data
         #[ink(constructor)]
@@ -230,7 +226,7 @@ mod subscrypt {
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             let caller = self.env().caller();
             assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
-            let mut provider = self.providers.get_mut(&caller).unwrap();
+            let provider = self.providers.get_mut(&caller).unwrap();
             for i in 0..durations.len() {
                 let cons = PlanConsts {
                     duration: durations[i],
@@ -255,7 +251,7 @@ mod subscrypt {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let mut provider = self.providers.get_mut(&caller).unwrap();
+            let provider = self.providers.get_mut(&caller).unwrap();
             let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
 
 
@@ -306,7 +302,7 @@ mod subscrypt {
             assert!(!consts.disabled, "Plan is currently disabled by provider");
             assert!(!self.check_subscription(caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
-            let mut user: &mut User = self.users.get_mut(&caller).unwrap();
+            let user: &mut User = self.users.get_mut(&caller).unwrap();
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(*self.address_to_index.get(&provider_address).unwrap());
                 self.records.insert((caller, provider_address), PlanRecord {
@@ -336,7 +332,7 @@ mod subscrypt {
 
             let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            self.transfer(self.env().caller(), consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
+            self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
 
             self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
         }
@@ -355,11 +351,11 @@ mod subscrypt {
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
-            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).try_into().unwrap());
+            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).unwrap());
             if paid > 0 {
                 self.transfer(caller, paid);
             }
-            return paid;
+            paid
         }
 
         /// refund : users can refund their money back
@@ -385,9 +381,9 @@ mod subscrypt {
             self.transfer(caller, transfer_value);
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-                self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), transfer_value);
+                self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount);
             }
-            self.remove_entry(provider_address, ((record.plan.duration + record.subscription_time - self.start_time) / 86400), record.plan.price * record.plan.max_refund_percent_policy / 1000);
+            self.remove_entry(provider_address, (record.plan.duration + record.subscription_time - self.start_time) / 86400, record.plan.price * record.plan.max_refund_percent_policy / 1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
@@ -400,7 +396,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) -> bool {
             if !self.records.contains_key(&(user, provider)) {
-                return false;
+                false
             }
             let encodable = [
                 token,
@@ -408,9 +404,9 @@ mod subscrypt {
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
-                return true;
+                true
             }
-            return false;
+            false
         }
 
         /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
@@ -426,7 +422,7 @@ mod subscrypt {
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(encoded, self.users.get(&caller).unwrap().subs_crypt_pass_hash, "Wrong auth");
-            return self.retrieve_whole_data(caller);
+            self.retrieve_whole_data(caller)
         }
 
         /// retrieve_whole_data_with_wallet : retrieve all user data.
@@ -434,7 +430,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
-            return self.retrieve_whole_data(caller);
+            self.retrieve_whole_data(caller)
         }
 
         fn retrieve_whole_data(&self, caller: Account) -> Vec<SubscriptionRecord> {
@@ -461,7 +457,7 @@ mod subscrypt {
                     data.push(k);
                 }
             }
-            return data;
+            data
         }
 
         /// retrieve_data_with_password : retrieve user data when wallet is not available.
@@ -545,7 +541,7 @@ mod subscrypt {
             return true;
         }
 
-        fn transfer(&self, addr: Account, amount: u128) {
+        fn transfer(&self, addr: Account, amount: u128) -> Result<(), Error> {
             self.env()
                 .transfer(addr, amount)
                 .map_err(|err| {
@@ -555,7 +551,8 @@ mod subscrypt {
                         }
                         _ => Er::TransferFailed,
                     }
-                });
+                })
+
         }
 
         /// add_entry : add a payment entry to provider payment management linked list
@@ -570,18 +567,18 @@ mod subscrypt {
                 linked_list.head = day_id;
                 self.objects.insert((provider_address, day_id), object);
                 linked_list.back = day_id;
-                linked_list.length = linked_list.length + 1;
+                linked_list.length += 1;
             } else if day_id < linked_list.head {
                 let object = Object { number: amount, next_day: linked_list.head };
                 linked_list.head = day_id;
                 self.objects.insert((provider_address, day_id), object);
-                linked_list.length = linked_list.length + 1;
+                linked_list.length += 1;
             } else if day_id > linked_list.back {
                 self.objects.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
                 let object = Object { number: amount, next_day: day_id };
                 linked_list.back = day_id;
                 self.objects.insert((provider_address, day_id), object);
-                linked_list.length = linked_list.length + 1;
+                linked_list.length += 1;
             } else {
                 let mut cur_id: u64 = linked_list.head;
                 loop {
@@ -592,7 +589,7 @@ mod subscrypt {
                         let object = Object { number: amount, next_day: self.objects.get(&(provider_address, cur_id)).unwrap().next_day };
                         self.objects.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
                         self.objects.insert((provider_address, day_id), object);
-                        linked_list.length = linked_list.length + 1;
+                        linked_list.length += 1;
                         break;
                     }
                     cur_id = self.objects.get(&(provider_address, cur_id)).unwrap().next_day;
@@ -629,13 +626,20 @@ mod subscrypt {
                 }
             }
             linked_list.head = cur_id;
-            return sum;
+            sum
         }
     }
 
 
     impl LinkedList {
         pub fn new() -> Self {
+            Self {
+                back: 0,
+                head: 0,
+                length: 0,
+            }
+        }
+        pub fn default() -> Self {
             Self {
                 back: 0,
                 head: 0,
@@ -656,13 +660,13 @@ mod subscrypt {
 
         #[ink::test]
         fn constructor_works() {
-            let subsCrypt = Subscrypt::new();
+            let subsCrypt = subs_crypt::new();
             assert_eq!(subsCrypt.provider_register_fee, 100);
         }
 
         #[ink::test]
         fn default_works() {
-            let subsCrypt = Subscrypt::default();
+            let subsCrypt = subs_crypt::default();
             assert_eq!(subsCrypt.provider_register_fee, 0);
         }
         #[ink::test]
@@ -673,7 +677,7 @@ mod subscrypt {
 
         #[ink::test]
         fn provider_register_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -704,7 +708,7 @@ mod subscrypt {
 
         #[ink::test]
         fn edit_plan_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -750,7 +754,7 @@ mod subscrypt {
 
         #[ink::test]
         fn add_plan_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -794,7 +798,7 @@ mod subscrypt {
 
         #[ink::test]
         fn change_disable_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -832,7 +836,7 @@ mod subscrypt {
 
         #[ink::test]
         fn subscribe_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -883,7 +887,7 @@ mod subscrypt {
 
         #[ink::test]
         fn withdraw_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -943,7 +947,7 @@ mod subscrypt {
 
         #[ink::test]
         fn refund_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1005,7 +1009,7 @@ mod subscrypt {
 
         #[ink::test]
         fn check_subscription_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1064,7 +1068,7 @@ mod subscrypt {
 
         #[ink::test]
         fn retrieve_data_with_wallet_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1124,7 +1128,7 @@ mod subscrypt {
 
         #[ink::test]
         fn retrieve_whole_data_with_wallet_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1184,7 +1188,7 @@ mod subscrypt {
 
         #[ink::test]
         fn retrieve_data_with_password_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1253,7 +1257,7 @@ mod subscrypt {
 
         #[ink::test]
         fn retrieve_whole_data_with_password_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1321,7 +1325,7 @@ mod subscrypt {
         }
         #[ink::test]
         fn check_auth_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -1387,7 +1391,7 @@ mod subscrypt {
 
         #[ink::test]
         fn add_entry_works() {
-            let mut subsCrypt = Subscrypt::new();
+            let mut subsCrypt = subs_crypt::new();
 
             let accounts =
                 ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
