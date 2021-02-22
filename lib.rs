@@ -18,6 +18,7 @@ mod subscrypt {
     };
     use core::convert::TryInto;
     use ink_prelude::string::String;
+    use ink_lang::static_assertions::_core::default::default;
 
     /// this struct represents a subscription record
     /// # fields:
@@ -639,11 +640,7 @@ mod subscrypt {
 
     impl LinkedList {
         pub fn new() -> Self {
-            Self {
-                back: 0,
-                head: 0,
-                length: 0,
-            }
+            LinkedList::default()
         }
         pub fn default() -> Self {
             Self {
