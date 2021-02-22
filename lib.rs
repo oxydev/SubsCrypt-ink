@@ -333,9 +333,9 @@ mod subscrypt {
             let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
             self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
-            let start_time =self.start_time;
-            let block_time =self.env().block_timestamp();
-            let transferred_balance=self.env().transferred_balance();
+            let start_time = self.start_time;
+            let block_time = self.env().block_timestamp();
+            let transferred_balance= self.env().transferred_balance();
             let dur = consts.duration;
             let max_percent= consts.max_refund_percent_policy;
             self.add_entry(provider_address, (block_time + dur - start_time) / 86400, (transferred_balance * max_percent) / 1000)
@@ -387,7 +387,9 @@ mod subscrypt {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
                 self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount);
             }
-            self.remove_entry(provider_address, (record.plan.duration + record.subscription_time - self.start_time) / 86400, record.plan.price * record.plan.max_refund_percent_policy / 1000);
+            let passed_time=record.plan.duration + record.subscription_time - self.start_time;
+            let amount = record.plan.price * record.plan.max_refund_percent_policy;
+            self.remove_entry(provider_address, passed_time / 86400,  amount/ 1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
