@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::new_without_default)]
 #![allow(non_snake_case)]
+#![allow(unused_mut)]
 use ink_lang as ink;
 
 #[ink::contract]
@@ -332,8 +333,8 @@ mod subscrypt {
             let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
             self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
-
-            self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
+            let start_time =self.start_time;
+            self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
@@ -673,6 +674,7 @@ mod subscrypt {
             let linked = LinkedList::new();
             assert_eq!(linked.back, 0);
         }
+
         #[ink::test]
         fn linked_List_default_works() {
             let linked = LinkedList::default();
