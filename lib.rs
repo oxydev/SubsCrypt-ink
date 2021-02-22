@@ -1,6 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-/// this contract is ink! implementation of SubsCrpt. more information here: https://github.com/w3f/Open-Grants-Program/blob/master/applications/SubsCrypt.md
-
 #![allow(clippy::new_without_default)]
 #![allow(non_snake_case)]
 use ink_lang as ink;
