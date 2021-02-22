@@ -961,7 +961,7 @@ mod subscrypt {
                 0,
                 test::CallData::new(call::Selector::new([0x00; 4])), // dummy
             );
-            let amount= subsCrypt.withdraw();
+            subsCrypt.withdraw();
 
         }
 
@@ -1526,7 +1526,7 @@ mod subscrypt {
                 0,
                 test::CallData::new(call::Selector::new([0x00; 4])), // dummy
             );
-            let amount = subsCrypt.process(accounts.alice,1000);
+            subsCrypt.process(accounts.alice,1000);
         }
 
     }
