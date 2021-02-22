@@ -396,7 +396,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) -> bool {
             if !self.records.contains_key(&(user, provider)) {
-                return false;
+                false
             }
             let encodable = [
                 token,
@@ -404,7 +404,7 @@ mod subscrypt {
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
-                return true;
+                true
             }
             false
         }
