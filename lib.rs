@@ -351,7 +351,7 @@ mod subscrypt {
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
-            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).unwrap());
+            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).try_into().unwrap());
             if paid > 0 {
                 self.transfer(caller, paid);
             }
