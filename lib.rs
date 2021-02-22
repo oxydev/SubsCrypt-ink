@@ -335,7 +335,8 @@ mod subscrypt {
             self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
             let start_time =self.start_time;
             let block_time =self.env().block_timestamp();
-            self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
+            let transferred_balance=self.env().transferred_balance();
+            self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
