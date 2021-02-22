@@ -357,7 +357,7 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             let paid: u128 = self.process(caller, self.env().block_timestamp() / 86400);
             if paid > 0 {
-                self.transfer(caller, paid);
+                assert_eq!(self.transfer(caller, paid),Ok(()));
             }
             paid
         }
@@ -382,10 +382,10 @@ mod subscrypt {
                 time_percent = 1000 - time_percent;
             }
             let transfer_value: u128 = time_percent * record.plan.price / 1000;
-            self.transfer(caller, transfer_value);
+            assert_eq!(self.transfer(caller, transfer_value),OK(()));
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-                self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount);
+                assert_eq!(self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount),OK(()));
             }
             let passed_time=record.plan.duration + record.subscription_time - self.start_time;
             let amount = record.plan.price * record.plan.max_refund_percent_policy;
