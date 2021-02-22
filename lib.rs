@@ -312,7 +312,7 @@ mod subscrypt {
             }
 
             let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
-            self.plan_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
+            self.planconsts.duration_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: *self.address_to_index.get(&provider_address).unwrap(),
@@ -336,7 +336,9 @@ mod subscrypt {
             let start_time =self.start_time;
             let block_time =self.env().block_timestamp();
             let transferred_balance=self.env().transferred_balance();
-            self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
+            let dur = consts.duration;
+            let max_percent= consts.max_refund_percent_policy;
+            self.add_entry(provider_address, (block_time + dur - start_time) / 86400, (transferred_balance * max_percent) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
