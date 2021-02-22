@@ -332,7 +332,7 @@ mod subscrypt {
 
             let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
+            assert_eq!(self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000),Ok(()));
             let start_time = self.start_time;
             let block_time = self.env().block_timestamp();
             let transferred_balance= self.env().transferred_balance();
