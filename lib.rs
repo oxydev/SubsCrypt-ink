@@ -18,7 +18,6 @@ mod subscrypt {
     };
     use core::convert::TryInto;
     use ink_prelude::string::String;
-    use ink_lang::static_assertions::_core::default::default;
 
     /// this struct represents a subscription record
     /// # fields:
