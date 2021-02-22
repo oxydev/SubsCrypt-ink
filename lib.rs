@@ -814,6 +814,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 100,
+            )
+                .expect("Cannot set account balance");
             test::push_execution_context::<Environment>(
                 accounts.alice,
                 callee,
@@ -852,6 +856,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             test::push_execution_context::<Environment>(
                 accounts.alice,
                 callee,
@@ -903,6 +911,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             test::push_execution_context::<Environment>(
                 accounts.alice,
                 callee,
@@ -962,7 +974,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1024,7 +1039,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1083,7 +1101,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1143,7 +1164,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1203,7 +1227,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1272,7 +1299,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1299,9 +1329,6 @@ mod subscrypt {
 
             assert_eq!(*subsCrypt.index_to_address.get(&subsCrypt.providers.get(&accounts.alice).unwrap().money_address).unwrap(), accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
             test::push_execution_context::<Environment>(
                 accounts.bob,
                 callee,
@@ -1340,7 +1367,10 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 50100,
+            )
+                .expect("Cannot set account balance");
             let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
                 0xCA, 0xFE, 0xBA, 0xBE,
             ]));
@@ -1407,6 +1437,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, 90100,
+            )
+                .expect("Cannot set account balance");
             test::push_execution_context::<Environment>(
                 accounts.alice,
                 callee,
@@ -1489,7 +1523,7 @@ mod subscrypt {
                 accounts.alice,
                 callee,
                 100000,
-                100,
+                0,
                 test::CallData::new(call::Selector::new([0x00; 4])), // dummy
             );
             let amount = subsCrypt.process(accounts.alice,1000);
