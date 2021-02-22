@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-/// this contract is ink! implementation of SubsCrpt. more information here: https://github.com/w3f/Open-Grants-Program/blob/master/applications/SubsCrypt.md
-
-
+#![allow(clippy::new_without_default)]
+#![allow(non_snake_case)]
+#![allow(unused_mut)]
 use ink_lang as ink;
 
 #[ink::contract]
@@ -332,9 +332,13 @@ mod subscrypt {
 
             let addr: &Account = self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap();
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000);
-
-            self.add_entry(provider_address, (self.env().block_timestamp() + consts.duration - &self.start_time) / 86400, (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000)
+            assert_eq!(self.transfer(*addr, consts.price * (1000 - consts.max_refund_percent_policy) / 1000),Ok(()));
+            let start_time = self.start_time;
+            let block_time = self.env().block_timestamp();
+            let transferred_balance= self.env().transferred_balance();
+            let dur = consts.duration;
+            let max_percent= consts.max_refund_percent_policy;
+            self.add_entry(provider_address, (block_time + dur - start_time) / 86400, (transferred_balance * max_percent) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
@@ -351,9 +355,9 @@ mod subscrypt {
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
             let caller: Account = self.env().caller();
-            let paid: u128 = self.process(caller, (self.env().block_timestamp() / 86400).unwrap());
+            let paid: u128 = self.process(caller, self.env().block_timestamp() / 86400);
             if paid > 0 {
-                self.transfer(caller, paid);
+                assert_eq!(self.transfer(caller, paid),Ok(()));
             }
             paid
         }
@@ -378,12 +382,14 @@ mod subscrypt {
                 time_percent = 1000 - time_percent;
             }
             let transfer_value: u128 = time_percent * record.plan.price / 1000;
-            self.transfer(caller, transfer_value);
+            assert_eq!(self.transfer(caller, transfer_value),Ok(()));
             if time_percent < record.plan.max_refund_percent_policy {
                 let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-                self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount);
+                assert_eq!(self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount),Ok(()));
             }
-            self.remove_entry(provider_address, (record.plan.duration + record.subscription_time - self.start_time) / 86400, record.plan.price * record.plan.max_refund_percent_policy / 1000);
+            let passed_time=record.plan.duration + record.subscription_time - self.start_time;
+            let amount = record.plan.price * record.plan.max_refund_percent_policy;
+            self.remove_entry(provider_address, passed_time / 86400,  amount/ 1000);
             self.records.get_mut(&(caller, provider_address)).unwrap().subscription_records.get_mut(number).unwrap().refunded = true;
         }
 
@@ -474,7 +480,7 @@ mod subscrypt {
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash, "Wrong auth");
-            return self.retrieve_data(caller, provider_address);
+            self.retrieve_data(caller, provider_address)
         }
 
         /// retrieve_data_with_wallet : retrieve user data whit wallet.
@@ -484,7 +490,7 @@ mod subscrypt {
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self, provider_address: Account) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
-            return self.retrieve_data( caller,provider_address);
+            self.retrieve_data( caller,provider_address)
         }
 
         fn retrieve_data(&self, caller: Account, provider_address: Account) -> Vec<SubscriptionRecord> {
@@ -511,7 +517,7 @@ mod subscrypt {
                 };
                 data.push(k);
             }
-            return data;
+            data
         }
 
 
@@ -538,7 +544,7 @@ mod subscrypt {
             if record.plan_index != plan_index || record.refunded || record.plan.duration + record.subscription_time < self.env().block_timestamp()  {
                 return false;
             }
-            return true;
+            true
         }
 
         fn transfer(&self, addr: Account, amount: u128) -> Result<(), Error> {
@@ -633,11 +639,7 @@ mod subscrypt {
 
     impl LinkedList {
         pub fn new() -> Self {
-            Self {
-                back: 0,
-                head: 0,
-                length: 0,
-            }
+            LinkedList::default()
         }
         pub fn default() -> Self {
             Self {
@@ -672,6 +674,12 @@ mod subscrypt {
         #[ink::test]
         fn linked_List_works() {
             let linked = LinkedList::new();
+            assert_eq!(linked.back, 0);
+        }
+
+        #[ink::test]
+        fn linked_List_default_works() {
+            let linked = LinkedList::default();
             assert_eq!(linked.back, 0);
         }
 
