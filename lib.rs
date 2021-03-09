@@ -21,11 +21,11 @@ mod subscrypt {
 
     /// this struct represents a subscription record
     /// # fields:
-    /// * provider : provider address of this record
-    /// * plan : plen consts
-    /// * plan_index : index of this plan in provider plans
-    /// * subscription_time : this stores start time of subscription
-    /// * meta_data_encrypted : user metadata with encryption
+    /// * provider
+    /// * plan 
+    /// * plan_index
+    /// * subscription_time : this stores start time of subscription (using in linkedList)
+    /// * meta_data_encrypted
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     pub struct SubscriptionRecord {
         provider: u128,
