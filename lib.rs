@@ -51,7 +51,7 @@ mod subscrypt {
     /// # fields:
     /// * duration : duration of plan
     /// * active_session_limit :
-    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,Clone, Copy)]
     struct PlanConsts {
         duration: u64,
         active_session_limit: u128,
@@ -285,6 +285,10 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             let value: u128 = self.env().transferred_balance();
+            let number: usize = plan_index.try_into().unwrap();
+
+            assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
+            assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
@@ -292,10 +296,6 @@ mod subscrypt {
                     subs_crypt_pass_hash: pass,
                 });
             }
-            let number: usize = plan_index.try_into().unwrap();
-
-            assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
-            assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
             let consts: &PlanConsts = &self.providers.get(&provider_address).unwrap().plans[number];
 
             assert_eq!(consts.price, value, "You have to pay exact plan price");
@@ -316,7 +316,7 @@ mod subscrypt {
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: *self.address_to_index.get(&provider_address).unwrap(),
-                plan: consts.clone(),
+                plan: *consts,
                 plan_index,
                 subscription_time: time,
                 meta_data_encrypted: metadata,
