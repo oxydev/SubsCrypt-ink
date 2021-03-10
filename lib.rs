@@ -24,7 +24,7 @@ mod subscrypt {
     /// * provider
     /// * plan 
     /// * plan_index
-    /// * subscription_time : this stores start time of subscription (using in linkedList)
+    /// * subscription_time : this stores start time of subscription (used in linkedList)
     /// * meta_data_encrypted
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     pub struct SubscriptionRecord {
@@ -101,7 +101,7 @@ mod subscrypt {
     /// main struct of contract
     /// # fields:
     /// * index_counter : counter for index_to_address hashmap
-    /// * start_time : start time of contract
+    /// * start_time : start time of the contract
     /// * provider_register_fee : each provider should pay the fee to use contract
     /// * index_to_address and address_to_index : for indexing addresses
     /// * providers : the hashmap that stores providers data
@@ -162,11 +162,11 @@ mod subscrypt {
 
         /// provider_register : add a provider to contract storage
         /// # arguments:
-        /// * durations : vector that contains "duration" amounts
-        /// * active_session_limits : vector that contains "active session limit" amounts
-        /// * prices : vector that contains "price" amounts
-        /// * max_refund_percent_policies : vector that contains "max refund policy" amounts
-        /// * address : money address for this provider
+        /// * durations
+        /// * active_session_limits
+        /// * prices
+        /// * max_refund_percent_policies
+        /// * address : money detination address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
       
@@ -228,11 +228,11 @@ mod subscrypt {
 
         /// edit_plan : edit a plan
         /// # arguments:
-        /// * plan_index : index of plan in provider struct
-        /// * duration : new duration of plan
-        /// * active_session_limit : new active session limit of plan
-        /// * prices : new price of plan
-        /// * max_refund_percent_policies : new max refund policy of plan
+        /// * plan_index
+        /// * duration
+        /// * active_session_limit
+        /// * prices
+        /// * max_refund_percent_policies
         #[ink(message)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
@@ -251,7 +251,7 @@ mod subscrypt {
 
         /// change_disable : disable and enable a plan
         /// # arguments:
-        /// * plan_index : index of plan
+        /// * plan_index
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
@@ -263,8 +263,8 @@ mod subscrypt {
 
         /// subscribe : users call this function to subscribe a plan
         /// # arguments:
-        /// * provider_address : address of provider
-        /// * plan_index : index of plan
+        /// * provider_address
+        /// * plan_index
         /// * pass : hash of (token + pass_phrase)
         /// * metadata : extra metadata of the plan
         #[ink(message, payable)]
@@ -343,8 +343,8 @@ mod subscrypt {
 
         /// refund : users can refund their money back
         /// # arguments:
-        /// * provider_address : address of provider
-        /// * plan_index : index of plan
+        /// * provider_address
+        /// * plan_index
         #[ink(message)]
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();
@@ -387,9 +387,9 @@ mod subscrypt {
 
         /// check_auth : this function authenticates the user with token and pass_phrase
         /// # arguments:
-        /// * user : user address
-        /// * provider : address of provider
-        /// * plan_index : index of plan
+        /// * user
+        /// * provider
+        /// * plan_index
         /// * token and pass_phrase : these are for authenticating
         #[ink(message)]
         pub fn check_auth(&self, user: Account, provider: Account, token: String, pass_phrase: String) -> bool {
@@ -411,7 +411,7 @@ mod subscrypt {
         /// # arguments:
         /// * user 
         /// * token and phrase : subscrypt passphrase
-        /// # return value: vector of subscription records
+        /// # return value : vector of subscription records
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(&self, user: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
@@ -424,7 +424,7 @@ mod subscrypt {
         }
 
         /// retrieve_whole_data_with_wallet : retrieve all user data.
-        /// # return value: vector of subscription records
+        /// # return value : vector of subscription records
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
             let caller: Account = self.env().caller();
@@ -455,8 +455,8 @@ mod subscrypt {
         /// retrieve_data_with_password : retrieve user data when wallet is not available.
         /// # arguments:
         /// * user 
-        /// * provider_address : address of provider
-        /// * token and phrase : subscrypt passphrase
+        /// * provider_address
+        /// * token and phrase
         /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_password(&self, user: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
@@ -589,7 +589,7 @@ mod subscrypt {
         /// remove_entry : when a user refunds this function removes its related entry
         /// # arguments:
         /// * provider_address
-        /// * day_id
+        /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         /// * amount
         fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             self.paymentAdmissions.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
@@ -598,7 +598,7 @@ mod subscrypt {
         /// process : when providers withdraw this function calculates the amount of money
         /// # arguments:
         /// * provider_address
-        /// * day_id
+        /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             let mut sum: u128 = 0;
