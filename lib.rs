@@ -46,14 +46,8 @@ mod subscrypt {
         pass_hash: [u8; 32],
     }
 
-    /// this struct stores data of a plan
-    /// # fields:
-    /// * duration 
-    /// * active_session_limit 
-    /// * price
-    /// * max_refund_percent_policy (described in white paper)
-    /// * disabled
-    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
+   
+    #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,Clone, Copy)]
     struct PlanConsts {
         duration: u64,
         active_session_limit: u128,
@@ -288,6 +282,10 @@ mod subscrypt {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             let value: u128 = self.env().transferred_balance();
+            let number: usize = plan_index.try_into().unwrap();
+
+            assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
+            assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
             if !self.users.contains_key(&caller) {
                 self.users.insert(caller, User {
                     list_of_providers: Vec::new(),
@@ -295,10 +293,6 @@ mod subscrypt {
                     subs_crypt_pass_hash: pass,
                 });
             }
-            let number: usize = plan_index.try_into().unwrap();
-
-            assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
-            assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
             let consts: &PlanConsts = &self.providers.get(&provider_address).unwrap().plans[number];
 
             assert_eq!(consts.price, value, "You have to pay exact plan price");
@@ -319,13 +313,7 @@ mod subscrypt {
 
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: *self.address_to_index.get(&provider_address).unwrap(),
-                plan: PlanConsts {
-                    duration: consts.duration,
-                    active_session_limit: consts.active_session_limit,
-                    price: consts.price,
-                    max_refund_percent_policy: consts.max_refund_percent_policy,
-                    disabled: consts.disabled,
-                },
+                plan: *consts,
                 plan_index,
                 subscription_time: time,
                 meta_data_encrypted: metadata,
@@ -377,19 +365,32 @@ mod subscrypt {
             let last_index: &u128 = self.plan_index_to_record_index.get(&(caller, provider_address, plan_index)).unwrap();
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
-            let mut time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
-            assert!(time_percent <= 1000);
-            if 1000 - time_percent > record.plan.max_refund_percent_policy {
-                time_percent = record.plan.max_refund_percent_policy;
+
+            // it shows how much of your subscription plan is passed in range of 0 to 1000 and more (if you refund after the plan is finished)
+            let mut spent_time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
+            // to avoid refund after plan is finished
+            assert!(spent_time_percent <= 1000);
+
+            // amount of time that is remained till the end of your plan = 1000 - spent_time_percent
+
+            let mut remained_time_percent = 1000 - spent_time_percent;
+            if remained_time_percent > record.plan.max_refund_percent_policy {
+                // in this case the customer wants to refund very early so he want to get
+                // more than the amount of refund policy, so we can only give back just
+                // max_refund_percent_policy of his/her subscription. Whole locked money will go directly to
+                // account of the customer
+                remained_time_percent = record.plan.max_refund_percent_policy;
             } else {
-                time_percent = 1000 - time_percent;
+                // in this case the customer wants to refund, but he/she used most of his subscription time
+                // and now he/she will get portion of locked money, and the provider will get the rest of money
+                let provider_portion_locked_money: u128 = (record.plan.max_refund_percent_policy - remained_time_percent) * record.plan.price / 1000;
+                assert_eq!(self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), provider_portion_locked_money),Ok(()));
             }
-            let transfer_value: u128 = time_percent * record.plan.price / 1000;
-            assert_eq!(self.transfer(caller, transfer_value),Ok(()));
-            if time_percent < record.plan.max_refund_percent_policy {
-                let refunded_amount: u128 = (record.plan.max_refund_percent_policy - time_percent) * record.plan.price / 1000;
-                assert_eq!(self.transfer(*self.index_to_address.get(&self.providers.get(&provider_address).unwrap().money_address).unwrap(), refunded_amount),Ok(()));
-            }
+
+            let customer_portion_locked_money: u128 = remained_time_percent * record.plan.price / 1000;
+            assert_eq!(self.transfer(caller, customer_portion_locked_money),Ok(()));
+
+
             let passed_time=record.plan.duration + record.subscription_time - self.start_time;
             let amount = record.plan.price * record.plan.max_refund_percent_policy;
             self.remove_entry(provider_address, passed_time / 86400,  amount/ 1000);
