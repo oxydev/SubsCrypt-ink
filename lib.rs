@@ -175,9 +175,9 @@ mod subscrypt {
         /// * address : money address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
-            assert_eq(durations.length , active_session_limits.length);
-            assert_eq(prices.length , active_session_limits.length);
-            assert_eq(max_refund_percent_policies.length , active_session_limits.length);
+            assert_eq!(durations.len() , active_session_limits.len());
+            assert_eq!(prices.len() , active_session_limits.len());
+            assert_eq!(max_refund_percent_policies.len() , active_session_limits.len());
             
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
@@ -223,9 +223,9 @@ mod subscrypt {
         /// * max_refund_percent_policies
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
-            assert_eq(durations.length , active_session_limits.length);
-            assert_eq(prices.length , active_session_limits.length);
-            assert_eq(max_refund_percent_policies.length , active_session_limits.length);
+            assert_eq!(durations.len() , active_session_limits.len());
+            assert_eq!(prices.len() , active_session_limits.len());
+            assert_eq!(max_refund_percent_policies.len() , active_session_limits.len());
             
             let caller = self.env().caller();
             assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
