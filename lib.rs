@@ -32,8 +32,7 @@ mod subscrypt {
         plan: PlanConsts,
         plan_index: u128,
         subscription_time: u64,
-        meta_data_encrypted: String,
-        //encrypted Data with public key of provider
+        meta_data_encrypted: String,        //encrypted Data with public key of provider
         refunded: bool,
     }
 
@@ -47,10 +46,13 @@ mod subscrypt {
         pass_hash: [u8; 32],
     }
 
-    /// this struct stores data of plans
+    /// this struct stores data of a plan
     /// # fields:
-    /// * duration : duration of plan
-    /// * active_session_limit :
+    /// * duration 
+    /// * active_session_limit 
+    /// * price
+    /// * max_refund_percent_policy (described in white paper)
+    /// * disabled
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct PlanConsts {
         duration: u64,
@@ -62,7 +64,7 @@ mod subscrypt {
 
     /// this struct represents a provider
     /// # fields:
-    /// * plans : array of plans that this provider have
+    /// * plans
     /// * money_address : provider earned money will be sent to this address
     /// * payment_manager : struct for handling refund requests
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
@@ -74,8 +76,8 @@ mod subscrypt {
 
     /// this struct represents a user
     /// # fields:
-    /// * list_of_providers : list of providers
-    /// * joined_date : when this user joined the platform
+    /// * list_of_providers
+    /// * joined_date
     /// * subs_crypt_pass_hash : pass hash for retrieve data
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo)]
     struct User {
@@ -85,9 +87,9 @@ mod subscrypt {
     }
 
     /// struct for handling payments of refund
-    /// * head : head of linked list
-    /// * back : back of linked list
-    /// * length : length of linked list
+    /// * head 
+    /// * back 
+    /// * length
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct LinkedList {
         head: u64,
@@ -97,7 +99,7 @@ mod subscrypt {
 
     /// struct that represents a payment admission
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
-    struct Object {
+    struct PaymentAdmission {
         number: u128,
         next_day: u64,
     }
@@ -110,7 +112,7 @@ mod subscrypt {
     /// * index_to_address and address_to_index : for indexing addresses
     /// * providers : the hashmap that stores providers data
     /// * users : the hashmap that stores users data
-    /// * objects : the hashmap that stores payment admissions data
+    /// * paymentAdmissions : the hashmap that stores payment admissions data
     /// * records : the hashmap that stores user's subscription records data
     /// * plan_index_to_record_index : the hashmap that stores user's last plan index for each plan index
     #[ink(storage)]
@@ -118,19 +120,13 @@ mod subscrypt {
         index_counter: u128,
         start_time: u64,
         provider_register_fee: u128,
-        index_to_address: HashMap<u128, Account>,
-        // index -> AccountId
-        address_to_index: HashMap<Account, u128>,
-        // AccountId -> index
-        providers: HashMap<Account, Provider>,
-        // (provider AccountId) -> provider data
-        users: HashMap<Account, User>,
-        // (user AccountId) -> user data
-        objects: HashMap<(Account, u64), Object>,
-        // (provider AccountId , day_id) -> payment admission
-        records: HashMap<(Account, Account), PlanRecord>,
-        // (user AccountId, provider AccountId) -> PlanRecord struct
-        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,// (user AccountId, provider AccountId, plan_index) -> index
+        index_to_address: HashMap<u128, Account>, // index -> AccountId
+        address_to_index: HashMap<Account, u128>, // AccountId -> index
+        providers: HashMap<Account, Provider>, // (provider AccountId) -> provider data
+        users: HashMap<Account, User>, // (user AccountId) -> user data
+        paymentAdmissions: HashMap<(Account, u64), PaymentAdmission>, // (provider AccountId , day_id) -> payment admission
+        records: HashMap<(Account, Account), PlanRecord>, // (user AccountId, provider AccountId) -> PlanRecord struct
+        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>, // (user AccountId, provider AccountId, plan_index) -> index
     }
 
     impl SubsCrypt {
@@ -146,7 +142,7 @@ mod subscrypt {
                 address_to_index: HashMap::new(),
                 providers: HashMap::new(),
                 users: ink_storage::collections::HashMap::new(),
-                objects: ink_storage::collections::HashMap::new(),
+                paymentAdmissions: ink_storage::collections::HashMap::new(),
                 records: ink_storage::collections::HashMap::new(),
                 plan_index_to_record_index: ink_storage::collections::HashMap::new(),
             }
@@ -164,7 +160,7 @@ mod subscrypt {
                 address_to_index: HashMap::new(),
                 providers: Default::default(),
                 users: Default::default(),
-                objects: Default::default(),
+                paymentAdmissions: Default::default(),
                 records: Default::default(),
                 plan_index_to_record_index: Default::default(),
             }
@@ -179,6 +175,10 @@ mod subscrypt {
         /// * address : money address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
+            assert_eq(durations.length , active_session_limits.length);
+            assert_eq(prices.length , active_session_limits.length);
+            assert_eq(max_refund_percent_policies.length , active_session_limits.length);
+            
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
@@ -217,13 +217,16 @@ mod subscrypt {
 
         /// add_plan : add plans to provider storage
         /// # arguments:
-        /// * durations : vector that contains "duration" amounts
-        /// * active_session_limits : vector that contains "active session limit" amounts
-        /// * prices : vector that contains "price" amounts
-        /// * max_refund_percent_policies : vector that contains "max refund policy" amounts
-        /// * address : money address for this provider
+        /// * durations
+        /// * active_session_limits
+        /// * prices
+        /// * max_refund_percent_policies
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
+            assert_eq(durations.length , active_session_limits.length);
+            assert_eq(prices.length , active_session_limits.length);
+            assert_eq(max_refund_percent_policies.length , active_session_limits.length);
+            
             let caller = self.env().caller();
             assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             let provider = self.providers.get_mut(&caller).unwrap();
@@ -569,36 +572,36 @@ mod subscrypt {
         fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
             let linked_list: &mut LinkedList = &mut self.providers.get_mut(&provider_address).unwrap().payment_manager;
             if linked_list.length == 0 {
-                let object = Object { number: amount, next_day: day_id };
+                let object = PaymentAdmission { number: amount, next_day: day_id };
                 linked_list.head = day_id;
-                self.objects.insert((provider_address, day_id), object);
+                self.paymentAdmissions.insert((provider_address, day_id), object);
                 linked_list.back = day_id;
                 linked_list.length += 1;
             } else if day_id < linked_list.head {
-                let object = Object { number: amount, next_day: linked_list.head };
+                let object = PaymentAdmission { number: amount, next_day: linked_list.head };
                 linked_list.head = day_id;
-                self.objects.insert((provider_address, day_id), object);
+                self.paymentAdmissions.insert((provider_address, day_id), object);
                 linked_list.length += 1;
             } else if day_id > linked_list.back {
-                self.objects.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
-                let object = Object { number: amount, next_day: day_id };
+                self.paymentAdmissions.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
+                let object = PaymentAdmission { number: amount, next_day: day_id };
                 linked_list.back = day_id;
-                self.objects.insert((provider_address, day_id), object);
+                self.paymentAdmissions.insert((provider_address, day_id), object);
                 linked_list.length += 1;
             } else {
                 let mut cur_id: u64 = linked_list.head;
                 loop {
                     if day_id == cur_id {
-                        self.objects.get_mut(&(provider_address, day_id)).unwrap().number += amount;
+                        self.paymentAdmissions.get_mut(&(provider_address, day_id)).unwrap().number += amount;
                         break;
-                    } else if day_id < self.objects.get(&(provider_address, cur_id)).unwrap().next_day {
-                        let object = Object { number: amount, next_day: self.objects.get(&(provider_address, cur_id)).unwrap().next_day };
-                        self.objects.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
-                        self.objects.insert((provider_address, day_id), object);
+                    } else if day_id < self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day {
+                        let object = PaymentAdmission { number: amount, next_day: self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day };
+                        self.paymentAdmissions.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
+                        self.paymentAdmissions.insert((provider_address, day_id), object);
                         linked_list.length += 1;
                         break;
                     }
-                    cur_id = self.objects.get(&(provider_address, cur_id)).unwrap().next_day;
+                    cur_id = self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day;
                     if cur_id == linked_list.back {
                         break;
                     }
@@ -612,7 +615,7 @@ mod subscrypt {
         /// * day_id
         /// * amount
         fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
-            self.objects.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
+            self.paymentAdmissions.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
         }
 
         /// process : when providers withdraw this function calculates the amount of money
@@ -624,8 +627,8 @@ mod subscrypt {
             let mut sum: u128 = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
-                sum += self.objects.get(&(provider_address, cur_id)).unwrap().number;
-                cur_id = self.objects.get(&(provider_address, cur_id)).unwrap().next_day;
+                sum += self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().number;
+                cur_id = self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day;
                 linked_list.length -= 1;
                 if cur_id == linked_list.back {
                     break;
