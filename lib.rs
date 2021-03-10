@@ -169,10 +169,7 @@ mod subscrypt {
         /// * address : money address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
-            assert_eq!(durations.len() , active_session_limits.len());
-            assert_eq!(prices.len() , active_session_limits.len());
-            assert_eq!(max_refund_percent_policies.len() , active_session_limits.len());
-            
+      
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
@@ -181,7 +178,8 @@ mod subscrypt {
             if !self.address_to_index.contains_key(&caller) {
                 self.index_counter += 1;
                 self.address_to_index.insert(caller, index);
-                self.index_to_address.insert(index, caller); }
+                self.index_to_address.insert(index, caller); 
+            }
             if self.address_to_index.contains_key(&address) {
                 index = *self.address_to_index.get(&address).unwrap();
             } else {
@@ -195,17 +193,9 @@ mod subscrypt {
                 money_address: index,
                 payment_manager: LinkedList::new(),
             };
-            for i in 0..durations.len() {
-                let cons = PlanConsts {
-                    duration: durations[i],
-                    active_session_limit: active_session_limits[i],
-                    price: prices[i],
-                    max_refund_percent_policy: max_refund_percent_policies[i],
-                    disabled: false,
-                };
-                provider.plans.push(cons);
-            }
             self.providers.insert(caller, provider);
+
+            self.add_plan(durations, active_session_limits, prices, max_refund_percent_policies);
         }
 
 
@@ -327,9 +317,7 @@ mod subscrypt {
             let start_time = self.start_time;
             let block_time = self.env().block_timestamp();
             let transferred_balance= self.env().transferred_balance();
-            let dur = consts.duration;
-            let max_percent= consts.max_refund_percent_policy;
-            self.add_entry(provider_address, (block_time + dur - start_time) / 86400, (transferred_balance * max_percent) / 1000)
+            self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
@@ -421,18 +409,18 @@ mod subscrypt {
 
         /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
         /// # arguments:
-        /// * caller : user address
+        /// * user 
         /// * token and phrase : subscrypt passphrase
         /// # return value: vector of subscription records
         #[ink(message)]
-        pub fn retrieve_whole_data_with_password(&self, caller: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
+        pub fn retrieve_whole_data_with_password(&self, user: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
                 token,
                 phrase
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
-            assert_eq!(encoded, self.users.get(&caller).unwrap().subs_crypt_pass_hash, "Wrong auth");
-            self.retrieve_whole_data(caller)
+            assert_eq!(encoded, self.users.get(&user).unwrap().subs_crypt_pass_hash, "Wrong auth");
+            self.retrieve_whole_data(user)
         }
 
         /// retrieve_whole_data_with_wallet : retrieve all user data.
@@ -452,13 +440,7 @@ mod subscrypt {
                 for i in 0..plan_records.subscription_records.len() {
                     let k = SubscriptionRecord {
                         provider: plan_records.subscription_records[i].provider,
-                        plan: PlanConsts {
-                            duration: plan_records.subscription_records[i].plan.duration,
-                            active_session_limit: plan_records.subscription_records[i].plan.active_session_limit,
-                            price: plan_records.subscription_records[i].plan.price,
-                            max_refund_percent_policy: plan_records.subscription_records[i].plan.max_refund_percent_policy,
-                            disabled: plan_records.subscription_records[i].plan.disabled,
-                        },
+                        plan: plan_records.subscription_records[i].plan,
                         plan_index: plan_records.subscription_records[i].plan_index,
                         subscription_time: plan_records.subscription_records[i].subscription_time,
                         meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted.clone(),
@@ -472,24 +454,24 @@ mod subscrypt {
 
         /// retrieve_data_with_password : retrieve user data when wallet is not available.
         /// # arguments:
-        /// * caller : user address
+        /// * user 
         /// * provider_address : address of provider
         /// * token and phrase : subscrypt passphrase
         /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
-        pub fn retrieve_data_with_password(&self, caller: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
+        pub fn retrieve_data_with_password(&self, user: Account, provider_address: Account, token: String, phrase: String) -> Vec<SubscriptionRecord> {
             let encodable = [
                 token,
                 phrase
             ];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
-            assert_eq!(encoded, self.records.get(&(caller, provider_address)).unwrap().pass_hash, "Wrong auth");
-            self.retrieve_data(caller, provider_address)
+            assert_eq!(encoded, self.records.get(&(user, provider_address)).unwrap().pass_hash, "Wrong auth");
+            self.retrieve_data(user, provider_address)
         }
 
         /// retrieve_data_with_wallet : retrieve user data whit wallet.
         /// # arguments:
-        /// * provider_address : address of provider
+        /// * provider_address
         /// # return value: vector of subscription records from a specific provider
         #[ink(message)]
         pub fn retrieve_data_with_wallet(&self, provider_address: Account) -> Vec<SubscriptionRecord> {
@@ -506,13 +488,7 @@ mod subscrypt {
             for i in 0..plan_records.subscription_records.len() {
                 let k = SubscriptionRecord {
                     provider: plan_records.subscription_records[i].provider,
-                    plan: PlanConsts {
-                        duration: plan_records.subscription_records[i].plan.duration,
-                        active_session_limit: plan_records.subscription_records[i].plan.active_session_limit,
-                        price: plan_records.subscription_records[i].plan.price,
-                        max_refund_percent_policy: plan_records.subscription_records[i].plan.max_refund_percent_policy,
-                        disabled: plan_records.subscription_records[i].plan.disabled,
-                    },
+                    plan: plan_records.subscription_records[i].plan,
                     plan_index: plan_records.subscription_records[i].plan_index,
                     subscription_time: plan_records.subscription_records[i].subscription_time,
                     //meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted,
