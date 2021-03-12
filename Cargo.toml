@@ -22,7 +22,7 @@ crate-type = [
     # Used for normal contract Wasm blobs.
     "cdylib",
 ]
-
+    
 [features]
 default = ["std",]
 std = [

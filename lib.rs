@@ -252,7 +252,12 @@ mod subscrypt {
             let time: u64 = self.env().block_timestamp();
             let value: u128 = self.env().transferred_balance();
             let number: usize = plan_index.try_into().unwrap();
+            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[number];
 
+            assert_eq!(consts.price, value, "You have to pay exact plan price");
+            assert!(!consts.disabled, "Plan is currently disabled by provider");
+
+            assert!(!self.check_subscription(caller, provider_address, plan_index), "You are already subscribed to this plan!");
             assert!(self.providers.contains_key(&provider_address), "Provider not existed in the contract!");
             assert!(self.providers.get(&provider_address).unwrap().plans.len() > plan_index.try_into().unwrap(), "Wrong plan index!");
             if !self.users.contains_key(&caller) {
@@ -263,14 +268,8 @@ mod subscrypt {
                     a: Vec::new(),
                 });
             }
-            let consts: &PlanConsts = &self.providers.get(&provider_address).unwrap().plans[number];
-
-            assert_eq!(consts.price, value, "You have to pay exact plan price");
-            assert!(!consts.disabled, "Plan is currently disabled by provider");
-            assert!(!self.check_subscription(caller, provider_address, plan_index), "You are already subscribed to this plan!");
 
             let user: &mut User = self.users.get_mut(&caller).unwrap();
-
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
                 self.records.insert((caller, provider_address), PlanRecord {
@@ -279,12 +278,10 @@ mod subscrypt {
                 });
             }
             let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
-
             self.plan_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
-
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
-                plan: *consts,
+                plan: consts,
                 plan_index,
                 subscription_time: time,
                 meta_data_encrypted: metadata,
@@ -298,9 +295,7 @@ mod subscrypt {
             let start_time = self.start_time;
             let block_time = self.env().block_timestamp();
             let transferred_balance= self.env().transferred_balance();
-            let dur = consts.duration;
-            let max_percent= consts.max_refund_percent_policy;
-            self.add_entry(provider_address, (block_time + dur - start_time) / 86400, (transferred_balance * max_percent) / 1000)
+            self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
         }
 
         /// set_subscrypt_pass : users can change their pass_hash
@@ -393,7 +388,7 @@ mod subscrypt {
 
         /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
         /// # arguments:
-        /// * user 
+        /// * user
         /// * token and phrase : subscrypt passphrase
         /// # return value : vector of subscription records
         #[ink(message)]
