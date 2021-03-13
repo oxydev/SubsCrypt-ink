@@ -22,7 +22,7 @@ mod subscrypt {
     /// this struct represents a subscription record
     /// # fields:
     /// * provider
-    /// * plan 
+    /// * plan
     /// * plan_index
     /// * subscription_time : this stores start time of subscription (used in linkedList)
     /// * meta_data_encrypted
@@ -46,7 +46,7 @@ mod subscrypt {
         pass_hash: [u8; 32],
     }
 
-   
+
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,Clone, Copy)]
     struct PlanConsts {
         duration: u64,
@@ -82,8 +82,8 @@ mod subscrypt {
     }
 
     /// struct for handling payments of refund
-    /// * head 
-    /// * back 
+    /// * head
+    /// * back
     /// * length
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo)]
     struct LinkedList {
@@ -162,11 +162,11 @@ mod subscrypt {
         /// * address : money detination address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
-      
+
             let caller = self.env().caller();
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
-            
+
             let mut provider = Provider {
                 plans: Vec::new(),
                 money_address: address,
@@ -189,7 +189,7 @@ mod subscrypt {
             assert_eq!(durations.len() , active_session_limits.len());
             assert_eq!(prices.len() , active_session_limits.len());
             assert_eq!(max_refund_percent_policies.len() , active_session_limits.len());
-            
+
             let caller = self.env().caller();
             assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             let provider = self.providers.get_mut(&caller).unwrap();
@@ -433,7 +433,7 @@ mod subscrypt {
 
         /// retrieve_data_with_password : retrieve user data when wallet is not available.
         /// # arguments:
-        /// * user 
+        /// * user
         /// * provider_address
         /// * token and phrase
         /// # return value: vector of subscription records from a specific provider
@@ -1565,8 +1565,8 @@ mod subscrypt {
             let t:String= "token".to_string();
             let p:String="pass_phrase".to_string();
             let encodable = [
-            t,
-            p
+                t,
+                p
             ];
             let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
             ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
