@@ -1,6 +1,6 @@
 # SubsCrypt-ink!
 
-![Build and Test](https://github.com/oxydev/SubsCrypt-ink/blob/main/.github/workflows/rust.yml/badge.svg)
+[![Rust](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml/badge.svg)](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml)
 
 ink! implementation of SubsCrypt. for more information please visit [online docs](https://oxydev.github.io/SubsCrypt-docs/#/)
 
