@@ -19,7 +19,7 @@ cargo +nightly test
 ```
 
 
-# Building
+## Building:
 
 To build the wasm of your contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
 
