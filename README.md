@@ -43,4 +43,4 @@ To build the metadata json of contract you can clone and change directory to the
 cargo +nightly contract generate-metadata
 ```
 
-You can also use the pre-built version of our code and access to the wasm and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/raw/main/SubsCrypt.wasm) and [here](https://raw.githubusercontent.com/oxydev/SubsCrypt-ink/main/metadata.json).
+You can also use the pre-built version of our code and access to the wasm and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/SubsCrypt.wasm) and [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/metadata.json).
