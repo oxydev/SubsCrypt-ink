@@ -1034,7 +1034,7 @@ mod subscrypt {
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
-            setCaller(callee, accounts.alce, 0);
+            setCaller(callee, accounts.alice, 0);
             subsCrypt.withdraw();
 
         }
@@ -1450,7 +1450,7 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            setAccountBalance(callee,50100);
+            setAccountBalance(callee,90100);
             setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
