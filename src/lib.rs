@@ -1474,7 +1474,7 @@ mod subscrypt {
                 [0; 32],
                 "nothing important".to_string(),
             );
-            setCaller(callee, accounts.bob, ۱0000);
+            setCaller(callee, accounts.bob, 10000);
 
             subsCrypt.subscribe(
                 accounts.alice,
