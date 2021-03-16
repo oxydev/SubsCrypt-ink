@@ -470,7 +470,6 @@ mod subscrypt {
                     plan: plan_records.subscription_records[i].plan,
                     plan_index: plan_records.subscription_records[i].plan_index,
                     subscription_time: plan_records.subscription_records[i].subscription_time,
-                    //meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted,
                     meta_data_encrypted: plan_records.subscription_records[i].meta_data_encrypted.clone(),
                     refunded: plan_records.subscription_records[i].refunded,
                 };
@@ -639,7 +638,22 @@ mod subscrypt {
             let linked = LinkedList::default();
             assert_eq!(linked.back, 0);
         }
+        fn setCaller(callee: Account, from: Account,value: u128){
+            test::push_execution_context::<Environment>(
+                from,
+                callee,
+                100,
+                value,
+                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            );
+        }
 
+        fn setAccountBalance(callee: Account,value: u128){
+            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
+                callee, value,
+            )
+                .expect("Cannot set account balance");
+        }
         #[ink::test]
         fn provider_register_works() {
             let mut subsCrypt = SubsCrypt::new();
@@ -650,13 +664,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setCaller(callee, accounts.alice,100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -682,13 +691,7 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                90,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.alice, 90);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -709,13 +712,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.alice, 90);
+
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24],
@@ -736,13 +734,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -768,7 +761,6 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 10);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().max_refund_percent_policy, 500);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
         }
 
@@ -783,13 +775,9 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setCaller(callee, accounts.alice, 90);
+
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -815,7 +803,6 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 10);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().max_refund_percent_policy, 500);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
         }
 
@@ -829,13 +816,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -859,7 +841,6 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().duration, 60 * 60 * 24 * 10);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().max_refund_percent_policy, 500);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
         }
 
@@ -874,13 +855,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.alice, 100);
+
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -904,7 +880,6 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().duration, 60 * 60 * 24 * 10);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().price, 100000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(2).unwrap().max_refund_percent_policy, 500);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
         }
 
@@ -918,17 +893,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setAccountBalance(callee,100);
+            setCaller(callee, accounts.alice, 100);
+
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -960,17 +928,9 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -986,16 +946,8 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
+            setCaller(callee, accounts.bob, 50000);
 
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
@@ -1016,17 +968,9 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -1042,16 +986,8 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
+            setCaller(callee, accounts.bob, 49500);
 
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                49500,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
@@ -1071,17 +1007,9 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -1098,15 +1026,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
 
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
@@ -1114,13 +1034,7 @@ mod subscrypt {
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                0,
-                0,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.alce, 0);
             subsCrypt.withdraw();
 
         }
@@ -1136,17 +1050,10 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
+
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -1159,19 +1066,10 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration, 60 * 60 * 24 * 30);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
 
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
@@ -1179,13 +1077,8 @@ mod subscrypt {
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.eve,
-                callee,
-                0,
-                0,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+
+            setCaller(callee, accounts.eve, 0);
             subsCrypt.withdraw();
 
         }
@@ -1199,22 +1092,9 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
 
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 5],
                 vec![2, 2],
@@ -1229,16 +1109,7 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
 
             subsCrypt.subscribe(
                 accounts.alice,
@@ -1265,21 +1136,9 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 5],
@@ -1295,16 +1154,7 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
 
             subsCrypt.subscribe(
                 accounts.alice,
@@ -1322,7 +1172,6 @@ mod subscrypt {
                 accounts.alice,
                 1,
             );
-            assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, true);
         }
 
         #[ink::test]
@@ -1334,21 +1183,9 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1364,16 +1201,7 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
 
             subsCrypt.subscribe(
                 accounts.alice,
@@ -1382,7 +1210,6 @@ mod subscrypt {
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.records.get(&(accounts.bob, accounts.alice)).unwrap().subscription_records.get(0).unwrap().refunded, false);
-
             assert_eq!(subsCrypt.check_subscription(accounts.bob,accounts.alice,1),true);
         }
 
@@ -1396,21 +1223,8 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1423,19 +1237,9 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().duration,  60 *600000* 5);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().price, 50000);
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
-
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
 
             subsCrypt.subscribe(
                 accounts.alice,
@@ -1459,21 +1263,8 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1488,17 +1279,7 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
-
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
 
             subsCrypt.subscribe(
                 accounts.alice,
@@ -1522,21 +1303,8 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1552,16 +1320,7 @@ mod subscrypt {
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, 50000);
             let t:String= "token".to_string();
             let p:String="pass_phrase".to_string();
             let encodable = [
@@ -1594,21 +1353,8 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1623,14 +1369,8 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            setCaller(callee, accounts.bob, 50000);
 
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
             let t:String= "token".to_string();
             let p:String="pass_phrase".to_string();
             let encodable = [
@@ -1662,21 +1402,8 @@ mod subscrypt {
                     .expect("Cannot get accounts");
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 50100,
-            )
-                .expect("Cannot set account balance");
-            let mut data = ink_env::test::CallData::new(ink_env::call::Selector::new([
-                0xCA, 0xFE, 0xBA, 0xBE,
-            ]));
-            data.push_arg(&accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                100,
-                data,
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 *600000* 5],
@@ -1691,17 +1418,8 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            setCaller(callee, accounts.bob, 50000);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
             let t:String= "token".to_string();
             let p:String="pass_phrase".to_string();
             let encodable = [
@@ -1732,17 +1450,8 @@ mod subscrypt {
 
             let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-            ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(
-                callee, 90100,
-            )
-                .expect("Cannot set account balance");
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100,
-                100,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setAccountBalance(callee,50100);
+            setCaller(callee, accounts.alice, 100);
 
             subsCrypt.provider_register(
                 vec![60 * 60 * 24, 60 * 60 * 24 * 30,60 * 60 * 24 * 300,60 * 60 * 24 * 31],
@@ -1757,30 +1466,16 @@ mod subscrypt {
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().plans.get(1).unwrap().disabled, false);
 
             assert_eq!(subsCrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
+            setCaller(callee, accounts.bob, 50000);
 
-
-            let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                50000,
-                50000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
             subsCrypt.subscribe(
                 accounts.alice,
                 1,
                 [0; 32],
                 "nothing important".to_string(),
             );
-            test::push_execution_context::<Environment>(
-                accounts.bob,
-                callee,
-                10000,
-                10000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.bob, ۱0000);
+
             subsCrypt.subscribe(
                 accounts.alice,
                 0,
@@ -1794,13 +1489,8 @@ mod subscrypt {
                 [0; 32],
                 "nothing important".to_string(),
             );
-            test::push_execution_context::<Environment>(
-                accounts.eve,
-                callee,
-                10000,
-                10000,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.eve, 10000);
+
             subsCrypt.subscribe(
                 accounts.alice,
                 0,
@@ -1814,13 +1504,8 @@ mod subscrypt {
                 "nothing important".to_string(),
             );
             assert_eq!(subsCrypt.users.get(&accounts.bob).unwrap().list_of_providers.get(0).unwrap(), &accounts.alice);
-            test::push_execution_context::<Environment>(
-                accounts.alice,
-                callee,
-                100000,
-                0,
-                test::CallData::new(call::Selector::new([0x00; 4])), // dummy
-            );
+            setCaller(callee, accounts.alice, 0);
+
             subsCrypt.process(accounts.alice,1000);
         }
 
