@@ -78,7 +78,6 @@ mod subscrypt {
         list_of_providers: Vec<Account>,
         joined_date: u64,
         subs_crypt_pass_hash: [u8; 32],
-        a: Vec<Account>,
     }
 
     /// struct for handling payments of refund
@@ -260,7 +259,6 @@ mod subscrypt {
                     list_of_providers: Vec::new(),
                     joined_date: self.env().block_timestamp(),
                     subs_crypt_pass_hash: pass,
-                    a: Vec::new(),
                 });
             }
             let consts: &PlanConsts = &self.providers.get(&provider_address).unwrap().plans[number];
