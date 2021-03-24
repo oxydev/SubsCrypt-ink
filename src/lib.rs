@@ -1,6 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::new_without_default)]
-#![allow(unused_mut)]
 
 #[ink_lang::contract]
 pub mod subscrypt {
@@ -116,7 +114,11 @@ pub mod subscrypt {
         pub records: HashMap<(Account, Account), PlanRecord>, // (user AccountId, provider AccountId) -> PlanRecord struct
         plan_index_to_record_index: HashMap<(Account, Account, u128), u128>, // (user AccountId, provider AccountId, plan_index) -> index
     }
-
+    impl Default for SubsCrypt {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
     impl SubsCrypt {
         /// constructor:
         /// initializes the main struct data
@@ -164,7 +166,7 @@ pub mod subscrypt {
             assert!(self.env().transferred_balance() >= self.provider_register_fee, "You have to pay a minimum amount to register in the contract!");
             assert!(!self.providers.contains_key(&caller), "You can not register again in the contract!");
 
-            let mut provider = Provider {
+            let provider = Provider {
                 plans: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
@@ -273,7 +275,7 @@ pub mod subscrypt {
                     pass_hash: pass,
                 });
             }
-            let mut plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
+            let plan_record: &mut PlanRecord = self.records.get_mut(&(caller, provider_address)).unwrap();
             self.plan_index_to_record_index.insert((caller, provider_address, plan_index), plan_record.subscription_records.len().try_into().unwrap());
             let record: SubscriptionRecord = SubscriptionRecord {
                 provider: provider_address,
@@ -330,7 +332,7 @@ pub mod subscrypt {
             let record: &SubscriptionRecord = self.records.get(&(caller, provider_address)).unwrap().subscription_records.get(number).unwrap();
 
             // it shows how much of your subscription plan is passed in range of 0 to 1000 and more (if you refund after the plan is finished)
-            let mut spent_time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
+            let spent_time_percent: u128 = ((time - record.subscription_time) * 1000 / (record.plan.duration)).try_into().unwrap();
             // to avoid refund after plan is finished
             assert!(spent_time_percent <= 1000);
 
@@ -591,6 +593,11 @@ pub mod subscrypt {
     }
 
 
+    impl Default for LinkedList {
+         fn default() -> Self {
+            Self::new()
+        }
+     }
 
     impl LinkedList {
         pub fn new() -> Self {
