@@ -742,12 +742,6 @@ pub mod subscrypt {
             provider_address: Account,
             plan_index: u128,
         ) -> bool {
-            if !self.users.contains_key(&user) {
-                return false;
-            }
-            if !self.records.contains_key(&(user, provider_address)) {
-                return false;
-            }
             if !self
                 .plan_index_to_record_index
                 .contains_key(&(user, provider_address, plan_index))
