@@ -24,7 +24,7 @@ pub mod tests {
     #[ink::test]
     fn default_works() {
         let subscrypt = Subscrypt::default();
-        assert_eq!(subscrypt.provider_register_fee, 0);
+        assert_eq!(subscrypt.provider_register_fee, 100);
     }
     #[ink::test]
     fn linked_list_works() {

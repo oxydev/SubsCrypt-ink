@@ -218,6 +218,10 @@ pub mod subscrypt {
 
         /// Editing previously created plans of the `caller`
         ///
+        /// # Note
+        ///
+        /// This will not effect the users that subscribed prior to the edition of plan
+        ///
         /// # Panics
         ///
         /// If `plan_index` is bigger than the length of `plans` of `provider`
@@ -239,9 +243,18 @@ pub mod subscrypt {
             plan.disabled = disabled;
         }
 
-        /// change_disable : disable and enable a plan
-        /// # arguments:
-        /// * plan_index
+        /// Disabling previously created plans of the `caller`
+        ///
+        /// # Note
+        ///
+        /// This will not effect the users that subscribed prior to the edition of plan
+        ///
+        /// # Panics
+        ///
+        /// If `plan_index` is bigger than the length of `plans` of `provider`
+        ///
+        /// # Examples
+        /// Examples in `change_disable_works` in `tests/test.rs`
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
@@ -251,12 +264,25 @@ pub mod subscrypt {
             self.providers.get_mut(&caller).unwrap().plans[number].disabled = !x;
         }
 
-        /// subscribe : users call this function to subscribe a plan
-        /// # arguments:
-        /// * provider_address
-        /// * plan_index
-        /// * pass : hash of (token + pass_phrase)
-        /// * metadata : extra metadata of the plan
+        /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
+        ///
+        /// # Note
+        ///
+        /// The `subs_crypt_pass_hash` will only be set if it's the first subscription of the `caller` to the `SubsCrypt` platform
+        /// `caller` can not subscribe to same `plan_index` of the same `provider_address` but
+        /// it can subscribe to different `plan_index` of same `provider_address` .
+        /// This line of code checks that if you previously subscribed to `provider_address` and if it's the first time
+        /// then `list_of_providers` will be updated.
+        ///  `if !self.records.contains_key(&(caller, provider_address)) `
+        ///
+        ///
+        /// # Panics
+        /// If paid amount is not equal to `price` of the plan
+        /// If plan is `disabled`
+        /// If `plan_index` is bigger than the length of `plans` of `provider_address`
+        ///
+        /// # Examples
+        /// Examples in `change_disable_works` in `tests/test.rs`
         #[ink(message, payable)]
         pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8; 32], metadata: String) {
             let caller: Account = self.env().caller();
