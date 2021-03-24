@@ -162,13 +162,16 @@ pub mod subscrypt {
             }
         }
 
-        /// 
+        /// Registering a new `Provider` by paying the required fee amount (`provider_register_fee`)
         ///
         /// # Panics
         ///
-        /// If `requirement` violates our invariant.
+        /// If paid amount is less than `provider_register_fee`
+        /// if same `AccountId` registered as provider previously.
         ///
         /// # Examples
+        /// Examples of different situations in `provider_register_works` , `provider_register_works2` and
+        /// `provider_register_works3` in `tests/test.rs`
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
             let caller = self.env().caller();
@@ -213,13 +216,14 @@ pub mod subscrypt {
             }
         }
 
-        /// edit_plan : edit a plan
-        /// # arguments:
-        /// * plan_index
-        /// * duration
-        /// * active_session_limit
-        /// * prices
-        /// * max_refund_percent_policies
+        /// Editing previously created plans of the `caller`
+        ///
+        /// # Panics
+        ///
+        /// If `plan_index` is bigger than the length of `plans` of `provider`
+        ///
+        /// # Examples
+        /// Examples of different situations in `edit_plan_works` and `edit_plan_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
@@ -227,7 +231,6 @@ pub mod subscrypt {
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let provider = self.providers.get_mut(&caller).unwrap();
             let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
-
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
