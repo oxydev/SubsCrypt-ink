@@ -255,14 +255,13 @@ pub mod subscrypt {
             );
             let provider = self.providers.get_mut(&caller).unwrap();
             for i in 0..durations.len() {
-                let cons = PlanConsts {
+                provider.plans.push(PlanConsts {
                     duration: durations[i],
                     active_session_limit: active_session_limits[i],
                     price: prices[i],
                     max_refund_percent_policy: max_refund_percent_policies[i],
                     disabled: false,
-                };
-                provider.plans.push(cons);
+                });
             }
         }
 
