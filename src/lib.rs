@@ -265,8 +265,8 @@ pub mod subscrypt {
             let number: usize = plan_index.try_into().unwrap();
             assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let alreadyEnable = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !alreadyEnable;
+            let already_enable = self.providers.get(&caller).unwrap().plans[number].disabled;
+            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !already_enable;
         }
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
