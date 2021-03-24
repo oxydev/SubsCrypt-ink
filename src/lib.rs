@@ -172,7 +172,7 @@ pub mod subscrypt {
         /// * active_session_limits
         /// * prices
         /// * max_refund_percent_policies
-        /// * address : money detination address for this provider
+        /// * address : money destination address for this provider
         #[ink(message, payable)]
         pub fn provider_register(
             &mut self,
@@ -358,15 +358,14 @@ pub mod subscrypt {
                 (caller, provider_address, plan_index),
                 plan_record.subscription_records.len().try_into().unwrap(),
             );
-            let record: SubscriptionRecord = SubscriptionRecord {
+            plan_record.subscription_records.push(SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
                 plan_index,
                 subscription_time: time,
                 meta_data_encrypted: metadata,
                 refunded: false,
-            };
-            plan_record.subscription_records.push(record);
+            });
 
             let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
