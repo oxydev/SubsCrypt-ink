@@ -186,12 +186,13 @@ pub mod subscrypt {
         }
 
 
-        /// add_plan : add plans to provider storage
-        /// # arguments:
-        /// * durations
-        /// * active_session_limits
-        /// * prices
-        /// * max_refund_percent_policies
+        /// add plans to provider storage
+        /// 
+        /// # Panics
+        /// 
+        /// If the size of vectors that are passed to the method, are deferent
+        /// If the caller is not a valid provider.
+        ///
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             assert_eq!(durations.len(), active_session_limits.len());
@@ -224,6 +225,7 @@ pub mod subscrypt {
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
+            assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let provider = self.providers.get_mut(&caller).unwrap();
             let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
@@ -236,16 +238,22 @@ pub mod subscrypt {
             plan.disabled = disabled;
         }
 
-        /// change_disable : disable and enable a plan
-        /// # arguments:
-        /// * plan_index
+
+        /// disable or enable a plan
+        /// 
+        /// # Panics
+        /// 
+        /// If the caller is not a valid provider.
+        /// If the plan_index is not valid (larger than `plans.len()`)
+        ///
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
             let number: usize = plan_index.try_into().unwrap();
+            assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let x = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !x;
+            let alreadyEnable = self.providers.get(&caller).unwrap().plans[number].disabled;
+            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !alreadyEnable;
         }
 
         /// subscribe : users call this function to subscribe a plan
