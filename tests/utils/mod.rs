@@ -14,7 +14,7 @@ pub mod utils {
             callee,
             100,
             value,
-            test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            test::CallData::new(call::Selector::new([0x00; 4])),
         );
     }
 
