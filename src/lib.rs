@@ -346,14 +346,7 @@ pub mod subscrypt {
         ///
         /// # Panics
         ///
-        /// If `plan_index` is bigger than the length of `plans` of `provider`
-        ///
-        /// # Examples
-        /// Examples of different situations in `edit_plan_works` and `edit_plan_works2` in `tests/test.rs`
-
-        /// set_subscrypt_pass : users can change their pass_hash
-        /// # arguments:
-        /// * pass : hash of (token + pass_phrase)
+        /// If caller is not a valid user
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
             assert!(self.users.contains_key(&self.env().caller()));
