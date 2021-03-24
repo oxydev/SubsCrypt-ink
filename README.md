@@ -39,7 +39,7 @@ Your contract is ready. You can find it here:
 
 To build the metadata json of contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
 
-```bash
+```bash 
 cargo +nightly contract generate-metadata
 ```
 
