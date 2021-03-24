@@ -18,7 +18,7 @@ scale-info = { version = "0.6", default-features = false, features = ["derive"],
 funty = {version = "=1.1", default-features = false}
 
 [lib]
-name = "SubsCrypt"
+name = "Subscrypt"
 path = "src/lib.rs"
 crate-type = [
     # Used for normal contract Wasm blobs.

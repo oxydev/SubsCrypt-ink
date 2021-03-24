@@ -106,7 +106,7 @@ pub mod subscrypt {
     /// * records : the hashmap that stores user's subscription records data
     /// * plan_index_to_record_index : the hashmap that stores user's last plan index for each plan index
     #[ink(storage)]
-    pub struct SubsCrypt {
+    pub struct Subscrypt {
         index_counter: u128,
         start_time: u64,
         pub provider_register_fee: u128,
@@ -117,7 +117,7 @@ pub mod subscrypt {
         plan_index_to_record_index: HashMap<(Account, Account, u128), u128>, // (user AccountId, provider AccountId, plan_index) -> index
     }
 
-    impl SubsCrypt {
+    impl Subscrypt {
         /// constructor:
         /// initializes the main struct data
         #[ink(constructor)]
