@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::new_without_default)]
-#![allow(non_snake_case)]
 #![allow(unused_mut)]
 
 #[ink_lang::contract]
@@ -113,7 +112,7 @@ pub mod subscrypt {
         pub provider_register_fee: u128,
         pub(crate) providers: HashMap<Account, Provider>, // (provider AccountId) -> provider data
         pub users: HashMap<Account, User>, // (user AccountId) -> user data
-        paymentAdmissions: HashMap<(Account, u64), PaymentAdmission>, // (provider AccountId , day_id) -> payment admission
+        payment_admissions: HashMap<(Account, u64), PaymentAdmission>, // (provider AccountId , day_id) -> payment admission
         pub records: HashMap<(Account, Account), PlanRecord>, // (user AccountId, provider AccountId) -> PlanRecord struct
         plan_index_to_record_index: HashMap<(Account, Account, u128), u128>, // (user AccountId, provider AccountId, plan_index) -> index
     }
@@ -129,7 +128,7 @@ pub mod subscrypt {
                 provider_register_fee: 100,
                 providers: HashMap::new(),
                 users: ink_storage::collections::HashMap::new(),
-                paymentAdmissions: ink_storage::collections::HashMap::new(),
+                payment_admissions: ink_storage::collections::HashMap::new(),
                 records: ink_storage::collections::HashMap::new(),
                 plan_index_to_record_index: ink_storage::collections::HashMap::new(),
             }
@@ -145,7 +144,7 @@ pub mod subscrypt {
                 provider_register_fee: 0,
                 providers: Default::default(),
                 users: Default::default(),
-                paymentAdmissions: Default::default(),
+                payment_admissions: Default::default(),
                 records: Default::default(),
                 plan_index_to_record_index: Default::default(),
             }
@@ -412,7 +411,7 @@ pub mod subscrypt {
             let mut data: Vec<SubscriptionRecord> = Vec::new();
             let user: &User = self.users.get(&caller).unwrap();
             for i in 0..user.list_of_providers.len() {
-                let plan_records: &PlanRecord = self.records.get(&(caller, *&user.list_of_providers[i])).unwrap();
+                let plan_records: &PlanRecord = self.records.get(&(caller, user.list_of_providers[i])).unwrap();
                 for i in 0..plan_records.subscription_records.len() {
                     let k = SubscriptionRecord {
                         provider: plan_records.subscription_records[i].provider,
@@ -526,34 +525,34 @@ pub mod subscrypt {
             if linked_list.length == 0 {
                 let object = PaymentAdmission { number: amount, next_day: day_id };
                 linked_list.head = day_id;
-                self.paymentAdmissions.insert((provider_address, day_id), object);
+                self.payment_admissions.insert((provider_address, day_id), object);
                 linked_list.back = day_id;
                 linked_list.length += 1;
             } else if day_id < linked_list.head {
                 let object = PaymentAdmission { number: amount, next_day: linked_list.head };
                 linked_list.head = day_id;
-                self.paymentAdmissions.insert((provider_address, day_id), object);
+                self.payment_admissions.insert((provider_address, day_id), object);
                 linked_list.length += 1;
             } else if day_id > linked_list.back {
-                self.paymentAdmissions.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
+                self.payment_admissions.get_mut(&(provider_address, linked_list.back)).unwrap().next_day = day_id;
                 let object = PaymentAdmission { number: amount, next_day: day_id };
                 linked_list.back = day_id;
-                self.paymentAdmissions.insert((provider_address, day_id), object);
+                self.payment_admissions.insert((provider_address, day_id), object);
                 linked_list.length += 1;
             } else {
                 let mut cur_id: u64 = linked_list.head;
                 loop {
                     if day_id == cur_id {
-                        self.paymentAdmissions.get_mut(&(provider_address, day_id)).unwrap().number += amount;
+                        self.payment_admissions.get_mut(&(provider_address, day_id)).unwrap().number += amount;
                         break;
-                    } else if day_id < self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day {
-                        let object = PaymentAdmission { number: amount, next_day: self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day };
-                        self.paymentAdmissions.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
-                        self.paymentAdmissions.insert((provider_address, day_id), object);
+                    } else if day_id < self.payment_admissions.get(&(provider_address, cur_id)).unwrap().next_day {
+                        let object = PaymentAdmission { number: amount, next_day: self.payment_admissions.get(&(provider_address, cur_id)).unwrap().next_day };
+                        self.payment_admissions.get_mut(&(provider_address, cur_id)).unwrap().next_day = day_id;
+                        self.payment_admissions.insert((provider_address, day_id), object);
                         linked_list.length += 1;
                         break;
                     }
-                    cur_id = self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day;
+                    cur_id = self.payment_admissions.get(&(provider_address, cur_id)).unwrap().next_day;
                     if cur_id == linked_list.back {
                         break;
                     }
@@ -567,7 +566,7 @@ pub mod subscrypt {
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         /// * amount
         fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
-            self.paymentAdmissions.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
+            self.payment_admissions.get_mut(&(provider_address, day_id)).unwrap().number -= amount;
         }
 
         /// process : when providers withdraw this function calculates the amount of money
@@ -579,8 +578,8 @@ pub mod subscrypt {
             let mut sum: u128 = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
-                sum += self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().number;
-                cur_id = self.paymentAdmissions.get(&(provider_address, cur_id)).unwrap().next_day;
+                sum += self.payment_admissions.get(&(provider_address, cur_id)).unwrap().number;
+                cur_id = self.payment_admissions.get(&(provider_address, cur_id)).unwrap().next_day;
                 linked_list.length -= 1;
                 if cur_id == linked_list.back {
                     break;
