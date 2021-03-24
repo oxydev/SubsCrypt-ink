@@ -412,7 +412,7 @@ pub mod subscrypt {
             let mut data: Vec<SubscriptionRecord> = Vec::new();
             let user: &User = self.users.get(&caller).unwrap();
             for i in 0..user.list_of_providers.len() {
-                let plan_records: &PlanRecord = self.records.get(&(caller, *&user.list_of_providers[i])).unwrap();
+                let plan_records: &PlanRecord = self.records.get(&(caller, user.list_of_providers[i])).unwrap();
                 for i in 0..plan_records.subscription_records.len() {
                     let k = SubscriptionRecord {
                         provider: plan_records.subscription_records[i].provider,
