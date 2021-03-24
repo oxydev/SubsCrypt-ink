@@ -338,6 +338,19 @@ pub mod subscrypt {
             self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
         }
 
+        /// changes subscrypt user dashboard pass hash
+        ///
+        /// # Note
+        ///
+        /// This will be used in `retrieve_whole_data_with_password` and `retrieve_data_with_password` methods
+        ///
+        /// # Panics
+        ///
+        /// If `plan_index` is bigger than the length of `plans` of `provider`
+        ///
+        /// # Examples
+        /// Examples of different situations in `edit_plan_works` and `edit_plan_works2` in `tests/test.rs`
+
         /// set_subscrypt_pass : users can change their pass_hash
         /// # arguments:
         /// * pass : hash of (token + pass_phrase)
