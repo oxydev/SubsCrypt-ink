@@ -196,6 +196,8 @@ pub mod subscrypt {
         /// If the size of vectors that are passed to the method, are deferent
         /// If the caller is not a valid provider.
         ///
+        /// # Examples
+        /// Examples in `add_plan_works` , `add_plan_works2`
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             assert_eq!(durations.len(), active_session_limits.len());
