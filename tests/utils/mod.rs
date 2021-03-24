@@ -1,30 +1,28 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::new_without_default)]
-#![allow(non_snake_case)]
-#![allow(unused_mut)]
 
 pub mod utils {
-    use crate::subscrypt::subscrypt::SubsCrypt;
+    use crate::subscrypt::subscrypt::Subscrypt;
     use ink_env::AccountId as Account;
     use ink_env::{call, test};
-
-    pub fn setCaller(callee: Account, from: Account, value: u128) {
+    const DEFAULT_GAS_LIMIT: u128 = 1_000_000;
+    
+    pub fn set_caller(callee: Account, from: Account, value: u128) {
         test::push_execution_context::<ink_env::DefaultEnvironment>(
             from,
             callee,
-            100,
+            DEFAULT_GAS_LIMIT,
             value,
-            test::CallData::new(call::Selector::new([0x00; 4])), // dummy
+            test::CallData::new(call::Selector::new([0x00; 4])),
         );
     }
 
-    pub fn setAccountBalance(callee: Account, value: u128) {
+    pub fn set_account_balance(callee: Account, value: u128) {
         ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(callee, value)
             .expect("Cannot set account balance");
     }
 
-    pub fn subscrypt_provider_register_scenario1(
-        subscrypt: &mut SubsCrypt,
+    pub fn subscrypt_provider_register_scenario(
+        subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
         active_session_limits: Vec<u128>,
@@ -90,8 +88,8 @@ pub mod utils {
         );
     }
 
-    pub fn subscrypt_edit_plan_scenario1(
-        subsCrypt: &mut SubsCrypt,
+    pub fn subscrypt_edit_plan_scenario(
+        subscrypt: &mut Subscrypt,
         account: Account,
         plan_index: u128,
         duration: u64,
@@ -100,9 +98,9 @@ pub mod utils {
         max_refund: u128,
         disabled: bool,
     ) {
-        subsCrypt.edit_plan(plan_index, duration, active, price, max_refund, disabled);
+        subscrypt.edit_plan(plan_index, duration, active, price, max_refund, disabled);
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -113,7 +111,7 @@ pub mod utils {
             active
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -124,7 +122,7 @@ pub mod utils {
             duration
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -135,7 +133,7 @@ pub mod utils {
             price
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -146,27 +144,27 @@ pub mod utils {
             max_refund
         );
         assert_eq!(
-            subsCrypt.providers.get(&account).unwrap().money_address,
+            subscrypt.providers.get(&account).unwrap().money_address,
             account
         );
     }
 
-    pub fn subscrypt_add_plan_scenario1(
-        subsCrypt: &mut SubsCrypt,
+    pub fn subscrypt_add_plan_scenario(
+        subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_percent_policies: Vec<u128>,
     ) {
-        subsCrypt.add_plan(
+        subscrypt.add_plan(
             durations.clone(),
             active_session_limits.clone(),
             prices.clone(),
             max_refund_percent_policies.clone(),
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -177,7 +175,7 @@ pub mod utils {
             active_session_limits[0]
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -188,7 +186,7 @@ pub mod utils {
             durations[0]
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -199,7 +197,7 @@ pub mod utils {
             prices[0]
         );
         assert_eq!(
-            subsCrypt
+            subscrypt
                 .providers
                 .get(&account)
                 .unwrap()
@@ -210,7 +208,7 @@ pub mod utils {
             max_refund_percent_policies[0]
         );
         assert_eq!(
-            subsCrypt.providers.get(&account).unwrap().money_address,
+            subscrypt.providers.get(&account).unwrap().money_address,
             account
         );
     }
