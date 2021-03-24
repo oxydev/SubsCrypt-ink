@@ -191,12 +191,15 @@ pub mod subscrypt {
         }
 
 
-        /// add_plan : add plans to provider storage
-        /// # arguments:
-        /// * durations
-        /// * active_session_limits
-        /// * prices
-        /// * max_refund_percent_policies
+        /// add plans to provider storage
+        /// 
+        /// # Panics
+        /// 
+        /// If the size of vectors that are passed to the method, are deferent
+        /// If the caller is not a valid provider.
+        ///
+        /// # Examples
+        /// Examples in `add_plan_works` , `add_plan_works2`
         #[ink(message)]
         pub fn add_plan(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>) {
             assert_eq!(durations.len(), active_session_limits.len());
@@ -234,6 +237,7 @@ pub mod subscrypt {
         pub fn edit_plan(&mut self, plan_index: u128, duration: u64, active_session_limit: u128, price: u128, max_refund_percent_policy: u128, disabled: bool) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
+            assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
             let provider = self.providers.get_mut(&caller).unwrap();
             let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
@@ -261,9 +265,10 @@ pub mod subscrypt {
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
             let number: usize = plan_index.try_into().unwrap();
+            assert!(self.providers.contains_key(&caller), "You should first register in the contract!");
             assert!(self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(), "please select a valid plan");
-            let x = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !x;
+            let already_enable = self.providers.get(&caller).unwrap().plans[number].disabled;
+            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !already_enable;
         }
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
