@@ -59,6 +59,8 @@ pub mod subscrypt {
     }
 
     /// This struct stores configs of plan which is set by provider
+    /// # Note
+    /// `max_refund_percent_policy` is out of 1000
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo, Clone, Copy)]
     pub struct PlanConsts {
         pub duration: u64,
@@ -271,6 +273,9 @@ pub mod subscrypt {
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
         ///
+        /// In this function, we will lock (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000
+        /// in the linkedlist of the contract and will transfer the rest of paid money directly to provider
+        ///
         /// # Note
         ///
         /// The `subs_crypt_pass_hash` will only be set if it's the first subscription of the `caller` to the `SubsCrypt` platform
@@ -284,10 +289,12 @@ pub mod subscrypt {
         /// # Panics
         /// If paid amount is not equal to `price` of the plan
         /// If plan is `disabled`
+        /// If `caller` is already subscribed to plan
+        /// If `provider` does not exist
         /// If `plan_index` is bigger than the length of `plans` of `provider_address`
         ///
         /// # Examples
-        /// Examples in `change_disable_works` in `tests/test.rs`
+        /// Examples in `subscribe_works` and `subscribe_works2` in `tests/test.rs`
         #[ink(message, payable)]
         pub fn subscribe(&mut self, provider_address: Account, plan_index: u128, pass: [u8; 32], metadata: String) {
             let caller: Account = self.env().caller();
@@ -338,22 +345,34 @@ pub mod subscrypt {
             self.add_entry(provider_address, (block_time + consts.duration - start_time) / 86400, (transferred_balance * consts.max_refund_percent_policy) / 1000)
         }
 
-        /// changes subscrypt user dashboard pass hash
+        /// Setting the `subs_crypt_pass_hash` of caller to `pass`
         ///
         /// # Note
         ///
-        /// This will be used in `retrieve_whole_data_with_password` and `retrieve_data_with_password` methods
+        /// The `subs_crypt_pass_hash` will also be set in `subscribe` function in first subscription
+        ///
         ///
         /// # Panics
-        ///
-        /// If caller is not a valid user
+        /// If `caller` does not exist in `users`
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
             assert!(self.users.contains_key(&self.env().caller()));
             self.users.get_mut(&self.env().caller()).unwrap().subs_crypt_pass_hash = pass;
         }
 
-        /// withdraw : providers call this function to claim their unlocked money
+        /// This function is used when providers want to collect the locked money for refund policy
+        ///
+        /// In this function, we will unlock that money which was locked in `subscribe` function via the
+        /// LinkedList mechanism, so providers can `withdraw` them when the due date passed.
+        ///
+        /// # Returns
+        /// `paid` amount is returned
+        ///
+        /// # Panics
+        /// If `provider` does not exist
+        ///
+        /// # Examples
+        /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
             assert!(self.providers.contains_key(&self.env().caller()), "You are not a registered provider");
@@ -365,10 +384,24 @@ pub mod subscrypt {
             paid
         }
 
-        /// refund : users can refund their money back
-        /// # arguments:
-        /// * provider_address
-        /// * plan_index
+        /// `users` can use this function to easily refund their subscription as the policy of that
+        /// specific plan was set. The `users` will be paid back at most
+        /// (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000 and it will be linearly
+        /// decreased as time passed and will get to 0. The `provider` will get 0 at least and will linearly
+        /// get more if `user` refund later.
+        ///
+        /// # Returns
+        /// `paid` amount is returned
+        ///
+        /// # Panics
+        /// If `provider` does not exist
+        ///
+        /// # Examples
+        /// Assume that `plan.max_refund_percent_policy` = 500 and `plan.price` = 100 the duration
+        /// of the plan is a month(30 days month). if `user` refund in first half of the month, then the user will
+        /// be paid 50. if `user` refund in day 20th of month then `user` will be paid 33.33 and `provider`
+        /// will be paid 16.66.
+        /// Other Examples in `refund_works` and `refund_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
             let caller: Account = self.env().caller();

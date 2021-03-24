@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::new_without_default)]
-#![allow(unused_mut)]
+
 
 #[path = "../src/lib.rs"]
 mod subscrypt;
@@ -12,7 +11,7 @@ pub mod tests {
     use ink_lang as ink;
     use crate::subscrypt::subscrypt::Subscrypt;
     use crate::subscrypt::subscrypt::LinkedList;
-    use crate::utils::utils::{set_caller, set_account_balance, subscrypt_provider_register_scenario1, subscrypt_edit_plan_scenario1, subscrypt_add_plan_scenario1};
+    use crate::utils::utils::{set_caller, set_account_balance, subscrypt_provider_register_scenario, subscrypt_edit_plan_scenario, subscrypt_add_plan_scenario};
     use ink_env::hash::{Sha2x256, HashOutput};
 
     #[ink::test]
@@ -47,11 +46,11 @@ pub mod tests {
             .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
     }
 
     #[ink::test]
@@ -63,11 +62,11 @@ pub mod tests {
         let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
             .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 90);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
     }
 
     #[ink::test]
@@ -79,11 +78,11 @@ pub mod tests {
         let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
             .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 90);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
     }
 
     #[ink::test]
@@ -95,17 +94,17 @@ pub mod tests {
             .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
-        subscrypt_edit_plan_scenario1(&mut subscrypt,accounts.alice,1,
-                                      60 * 60 * 24 * 10,
-                                      3,
-                                      100000,
-                                      500,
-                                      false);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
+        subscrypt_edit_plan_scenario(&mut subscrypt, accounts.alice, 1,
+                                     60 * 60 * 24 * 10,
+                                     3,
+                                     100000,
+                                     500,
+                                     false);
     }
 
     #[ink::test]
@@ -117,17 +116,17 @@ pub mod tests {
         let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
             .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
-        subscrypt_edit_plan_scenario1(&mut subscrypt,accounts.alice,2,
-                                      60 * 60 * 24 * 10,
-                                      3,
-                                      100000,
-                                      500,
-                                      false);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
+        subscrypt_edit_plan_scenario(&mut subscrypt, accounts.alice, 2,
+                                     60 * 60 * 24 * 10,
+                                     3,
+                                     100000,
+                                     500,
+                                     false);
     }
     #[ink::test]
     fn add_plan_works() {
@@ -138,15 +137,15 @@ pub mod tests {
             .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
-        subscrypt_add_plan_scenario1(&mut subscrypt, accounts.alice,vec![60 * 60 * 24 * 10],
-                                     vec![3],
-                                     vec![100000],
-                                     vec![500])
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
+        subscrypt_add_plan_scenario(&mut subscrypt, accounts.alice, vec![60 * 60 * 24 * 10],
+                                    vec![3],
+                                    vec![100000],
+                                    vec![500])
     }
 
     #[ink::test]
@@ -158,15 +157,15 @@ pub mod tests {
         let callee = ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
             .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
-        subscrypt_add_plan_scenario1(&mut subscrypt, accounts.alice, vec![60 * 60 * 24 * 10],
-                                     vec![3,2],
-                                     vec![100000],
-                                     vec![500]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
+        subscrypt_add_plan_scenario(&mut subscrypt, accounts.alice, vec![60 * 60 * 24 * 10],
+                                    vec![3,2],
+                                    vec![100000],
+                                    vec![500]);
     }
 
     #[ink::test]
@@ -179,11 +178,11 @@ pub mod tests {
 
         set_account_balance(callee, 100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         assert_eq!(subscrypt.providers.get(&accounts.alice).unwrap().money_address, accounts.alice);
         subscrypt.change_disable(1);
@@ -203,11 +202,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -231,11 +230,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
         set_caller(callee, accounts.bob, 49500);
 
         subscrypt.subscribe(
@@ -260,11 +259,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
         subscrypt.subscribe(
@@ -293,11 +292,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
         subscrypt.subscribe(
@@ -325,11 +324,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -359,11 +358,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
         set_caller(callee, accounts.bob, 50000);
 
         subscrypt.subscribe(
@@ -396,11 +395,11 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -424,11 +423,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -454,11 +453,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -484,11 +483,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
         let t:String= "token".to_string();
@@ -523,11 +522,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -563,11 +562,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-                                              vec![2, 2],
-                                              vec![10000, 50000],
-                                              vec![50, 100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+                                             vec![2, 2],
+                                             vec![10000, 50000],
+                                             vec![50, 100]);
 
         set_caller(callee, accounts.bob, 50000);
 
@@ -603,11 +602,11 @@ pub mod tests {
             .expect("Cannot get contract id");
         set_account_balance(callee, 90100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario1(&mut subscrypt, accounts.alice,
-                                              vec![60 * 60 * 24, 60 * 60 * 24 * 30,60 * 60 * 24 * 300,60 * 60 * 24 * 31],
-                                              vec![2, 2,2,2],
-                                              vec![10000, 50000,10000,10000],
-                                              vec![50, 100,200,100]);
+        subscrypt_provider_register_scenario(&mut subscrypt, accounts.alice,
+                                             vec![60 * 60 * 24, 60 * 60 * 24 * 30,60 * 60 * 24 * 300,60 * 60 * 24 * 31],
+                                             vec![2, 2,2,2],
+                                             vec![10000, 50000,10000,10000],
+                                             vec![50, 100,200,100]);
         set_caller(callee, accounts.bob, 50000);
 
         subscrypt.subscribe(
