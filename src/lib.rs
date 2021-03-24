@@ -401,30 +401,50 @@ pub mod subscrypt {
             }
 
             let user: &mut User = self.users.get_mut(&caller).unwrap();
+
+
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
+
+                let plan_record: PlanRecord = PlanRecord {
+                    subscription_records: vec![SubscriptionRecord {
+                        provider: provider_address,
+                        plan: consts,
+                        plan_index,
+                        subscription_time: time,
+                        meta_data_encrypted: metadata,
+                        refunded: false,
+                    }],
+                    pass_hash: pass,
+                };
+
                 self.records.insert(
                     (caller, provider_address),
-                    PlanRecord {
-                        subscription_records: Vec::new(),
-                        pass_hash: pass,
-                    },
+                    plan_record,
                 );
+
+                self.plan_index_to_record_index.insert(
+                    (caller, provider_address, plan_index),
+                    0,
+                );
+            } else {
+                let plan_record: &mut PlanRecord =
+                    self.records.get_mut(&(caller, provider_address)).unwrap();
+
+                self.plan_index_to_record_index.insert(
+                    (caller, provider_address, plan_index),
+                    plan_record.subscription_records.len().try_into().unwrap(),
+                );
+
+                plan_record.subscription_records.push(SubscriptionRecord {
+                    provider: provider_address,
+                    plan: consts,
+                    plan_index,
+                    subscription_time: time,
+                    meta_data_encrypted: metadata,
+                    refunded: false,
+                });
             }
-            let plan_record: &mut PlanRecord =
-                self.records.get_mut(&(caller, provider_address)).unwrap();
-            self.plan_index_to_record_index.insert(
-                (caller, provider_address, plan_index),
-                plan_record.subscription_records.len().try_into().unwrap(),
-            );
-            plan_record.subscription_records.push(SubscriptionRecord {
-                provider: provider_address,
-                plan: consts,
-                plan_index,
-                subscription_time: time,
-                meta_data_encrypted: metadata,
-                refunded: false,
-            });
 
             let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
