@@ -114,12 +114,12 @@ pub mod subscrypt {
         pub records: HashMap<(Account, Account), PlanRecord>, // (user AccountId, provider AccountId) -> PlanRecord struct
         plan_index_to_record_index: HashMap<(Account, Account, u128), u128>, // (user AccountId, provider AccountId, plan_index) -> index
     }
-    impl Default for SubsCrypt {
+    impl Default for Subscrypt {
         fn default() -> Self {
             Self::new()
         }
     }
-    impl SubsCrypt {
+    impl Subscrypt {
         /// constructor:
         /// initializes the main struct data
         #[ink(constructor)]
@@ -158,7 +158,7 @@ pub mod subscrypt {
         /// * active_session_limits
         /// * prices
         /// * max_refund_percent_policies
-        /// * address : money detination address for this provider
+        /// * address : money destination address for this provider
         #[ink(message, payable)]
         pub fn provider_register(&mut self, durations: Vec<u64>, active_session_limits: Vec<u128>, prices: Vec<u128>, max_refund_percent_policies: Vec<u128>, address: Account) {
 
