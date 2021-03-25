@@ -4,8 +4,7 @@
 
 ink! implementation of SubsCrypt. for more information please visit [online docs](https://oxydev.github.io/SubsCrypt-docs/#/)
 
-
-## Testing:
+## Testing
 
 First of all you need to clone the repository, run:
 
@@ -20,22 +19,20 @@ Then, you can run the tests with this line of code:
 cargo +nightly test
 ```
 
+## Building
 
-## Building:
-
-To build the wasm of your contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
+To build the WASM of your contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
 
 ```bash
-cargo +nightly contract build
+cargo +nightly build
 ```
 
-This command will take some minutes and the output will be sth like this:
+This command will take some minutes and the output will be something like this:
 
 ```bash
 Your contract is ready. You can find it here:
 /root/test/SubsCrypt-ink/target/SubsCrypt.wasm
 ```
-
 
 To build the metadata json of contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
 
@@ -43,4 +40,4 @@ To build the metadata json of contract you can clone and change directory to the
 cargo +nightly contract generate-metadata
 ```
 
-You can also use the pre-built version of our code and access to the wasm and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/SubsCrypt.wasm) and [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/metadata.json).
+You can also use the pre-built version of our code and access to the WASM and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/SubsCrypt.wasm) and [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/metadata.json).
