@@ -5,7 +5,9 @@ pub mod utils {
     use ink_env::AccountId as Account;
     use ink_env::{call, test};
     const DEFAULT_GAS_LIMIT: u128 = 1_000_000;
-    
+
+    /// This function will set the `caller` and `callee` of transaction with endowment amount of
+    /// `value`
     pub fn set_caller(callee: Account, from: Account, value: u128) {
         test::push_execution_context::<ink_env::DefaultEnvironment>(
             from,
@@ -15,13 +17,14 @@ pub mod utils {
             test::CallData::new(call::Selector::new([0x00; 4])),
         );
     }
-
-    pub fn set_account_balance(callee: Account, value: u128) {
-        ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(callee, value)
+    /// This function will set the account balance of `callee` to `value`
+    pub fn set_account_balance(account: Account, value: u128) {
+        ink_env::test::set_account_balance::<ink_env::DefaultEnvironment>(account, value)
             .expect("Cannot set account balance");
     }
 
-    pub fn subscrypt_provider_register_scenario(
+    /// This function will do the provider registration routines
+    pub fn subscrypt_provider_register_routine(
         subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
@@ -87,8 +90,8 @@ pub mod utils {
             account
         );
     }
-
-    pub fn subscrypt_edit_plan_scenario(
+    /// This function will do the edit plan of provider routines
+    pub fn subscrypt_edit_plan_routine(
         subscrypt: &mut Subscrypt,
         account: Account,
         plan_index: u128,
@@ -148,8 +151,8 @@ pub mod utils {
             account
         );
     }
-
-    pub fn subscrypt_add_plan_scenario(
+    /// This function will do the add plan of provider routines
+    pub fn subscrypt_add_plan_routine(
         subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
