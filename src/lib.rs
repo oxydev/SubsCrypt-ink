@@ -389,6 +389,20 @@ pub mod subscrypt {
                     > plan_index.try_into().unwrap(),
                 "Wrong plan index!"
             );
+
+            let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
+            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            assert_eq!(
+                self.transfer(
+                    *addr,
+                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
+                ),
+                Ok(())
+            );
+
+
+
+
             if !self.users.contains_key(&caller) {
                 self.users.insert(
                     caller,
@@ -399,10 +413,8 @@ pub mod subscrypt {
                 );
             }
 
-            let user: &mut User = self.users.get_mut(&caller).unwrap();
-
             if !self.records.contains_key(&(caller, provider_address)) {
-                user.list_of_providers.push(provider_address);
+                self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
                 let plan_record: PlanRecord = PlanRecord {
                     subscription_records: vec![SubscriptionRecord {
@@ -438,23 +450,10 @@ pub mod subscrypt {
                     refunded: false,
                 });
             }
-
-            let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
-            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            assert_eq!(
-                self.transfer(
-                    *addr,
-                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
-                ),
-                Ok(())
-            );
-            let start_time = self.start_time;
-            let block_time = self.env().block_timestamp();
-            let transferred_balance = self.env().transferred_balance();
             self.add_entry(
                 provider_address,
-                (block_time + consts.duration - start_time) / 86400,
-                (transferred_balance * consts.max_refund_percent_policy) / 1000,
+                (self.env().block_timestamp() + consts.duration - self.start_time) / 86400,
+                (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
             )
         }
 
