@@ -224,11 +224,11 @@ pub mod subscrypt {
             );
         }
 
-        /// add plans to provider storage
+        /// Add plans to `provider` storage
         ///
         /// # Panics
         ///
-        /// If the size of vectors that are passed to the method, are deferent
+        /// If the size of vectors passed to the methods are different
         /// If the caller is not a valid provider.
         ///
         /// # Examples
@@ -338,7 +338,7 @@ pub mod subscrypt {
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
         ///
         /// In this function, we will lock (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000
-        /// in the linkedlist of the contract and will transfer the rest of paid money directly to provider
+        /// in the `Linked List` of the contract and will transfer the rest of paid money directly to provider
         ///
         /// # Note
         ///
@@ -401,7 +401,6 @@ pub mod subscrypt {
 
             let user: &mut User = self.users.get_mut(&caller).unwrap();
 
-
             if !self.records.contains_key(&(caller, provider_address)) {
                 user.list_of_providers.push(provider_address);
 
@@ -417,15 +416,10 @@ pub mod subscrypt {
                     pass_hash: pass,
                 };
 
-                self.records.insert(
-                    (caller, provider_address),
-                    plan_record,
-                );
+                self.records.insert((caller, provider_address), plan_record);
 
-                self.plan_index_to_record_index.insert(
-                    (caller, provider_address, plan_index),
-                    0,
-                );
+                self.plan_index_to_record_index
+                    .insert((caller, provider_address, plan_index), 0);
             } else {
                 let plan_record: &mut PlanRecord =
                     self.records.get_mut(&(caller, provider_address)).unwrap();

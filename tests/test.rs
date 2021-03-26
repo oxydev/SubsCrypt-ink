@@ -10,8 +10,8 @@ pub mod tests {
     use crate::subscrypt::subscrypt::LinkedList;
     use crate::subscrypt::subscrypt::Subscrypt;
     use crate::utils::utils::{
-        set_account_balance, set_caller, subscrypt_add_plan_scenario, subscrypt_edit_plan_scenario,
-        subscrypt_provider_register_scenario,
+        set_account_balance, set_caller, subscrypt_add_plan_routine, subscrypt_edit_plan_routine,
+        subscrypt_provider_register_routine,
     };
     use ink_env::hash::{HashOutput, Sha2x256};
     use ink_lang as ink;
@@ -39,6 +39,9 @@ pub mod tests {
         assert_eq!(linked.back, 0);
     }
 
+    /// Simple scenario that `alice` register as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
     #[ink::test]
     fn provider_register_works() {
         let mut subscrypt = Subscrypt::new();
@@ -49,7 +52,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -59,6 +62,8 @@ pub mod tests {
         );
     }
 
+    /// Simple scenario that `alice` tries to register as a provider but it fails because of
+    /// insufficient payment of staking value of policy of contract.
     #[ink::test]
     #[should_panic]
     fn provider_register_works2() {
@@ -69,7 +74,7 @@ pub mod tests {
             ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 90);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -79,6 +84,8 @@ pub mod tests {
         );
     }
 
+    /// Simple scenario that `alice` tries to register as a provider but it fails because of
+    /// wrong args(length of vectors of plan configs are not equal).
     #[ink::test]
     #[should_panic]
     fn provider_register_works3() {
@@ -88,8 +95,8 @@ pub mod tests {
         let callee =
             ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-        set_caller(callee, accounts.alice, 90);
-        subscrypt_provider_register_scenario(
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24],
@@ -98,7 +105,9 @@ pub mod tests {
             vec![50, 100],
         );
     }
-
+    /// Simple scenario that `alice` edit a plan as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` changes the monthly plan configs to different configs
     #[ink::test]
     fn edit_plan_works() {
         let mut subscrypt = Subscrypt::new();
@@ -109,7 +118,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -117,7 +126,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
         );
-        subscrypt_edit_plan_scenario(
+        subscrypt_edit_plan_routine(
             &mut subscrypt,
             accounts.alice,
             1,
@@ -128,7 +137,9 @@ pub mod tests {
             false,
         );
     }
-
+    /// Simple scenario that `alice` tries to edit a plan as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` tries to change config of her third plan which doesn't exist so it will fail
     #[ink::test]
     #[should_panic]
     fn edit_plan_works2() {
@@ -139,7 +150,7 @@ pub mod tests {
             ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -147,7 +158,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
         );
-        subscrypt_edit_plan_scenario(
+        subscrypt_edit_plan_routine(
             &mut subscrypt,
             accounts.alice,
             2,
@@ -158,6 +169,9 @@ pub mod tests {
             false,
         );
     }
+    /// Simple scenario that `alice` adds a plan as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` adds a third plan with 10 days long and 50% refund policy
     #[ink::test]
     fn add_plan_works() {
         let mut subscrypt = Subscrypt::new();
@@ -168,7 +182,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
 
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -176,7 +190,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
         );
-        subscrypt_add_plan_scenario(
+        subscrypt_add_plan_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24 * 10],
@@ -185,7 +199,9 @@ pub mod tests {
             vec![500],
         )
     }
-
+    /// Simple scenario that `alice` tries to add a plan as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` tries to add more plans but obviously she is doing it wrong
     #[ink::test]
     #[should_panic]
     fn add_plan_works2() {
@@ -196,7 +212,7 @@ pub mod tests {
             ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -204,7 +220,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
         );
-        subscrypt_add_plan_scenario(
+        subscrypt_add_plan_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24 * 10],
@@ -214,6 +230,9 @@ pub mod tests {
         );
     }
 
+    /// Simple scenario that `alice` disables a plan as a provider
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` disables and enables its plan
     #[ink::test]
     fn change_disable_works() {
         let mut subscrypt = Subscrypt::new();
@@ -225,7 +244,7 @@ pub mod tests {
 
         set_account_balance(callee, 100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -234,14 +253,6 @@ pub mod tests {
             vec![50, 100],
         );
 
-        assert_eq!(
-            subscrypt
-                .providers
-                .get(&accounts.alice)
-                .unwrap()
-                .money_address,
-            accounts.alice
-        );
         subscrypt.change_disable(1);
         assert_eq!(
             subscrypt
@@ -269,6 +280,10 @@ pub mod tests {
         );
     }
 
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn subscribe_works() {
         let mut subscrypt = Subscrypt::new();
@@ -280,7 +295,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -303,7 +318,10 @@ pub mod tests {
             &accounts.alice
         );
     }
-
+    /// Simple scenario that `alice` register as a provider and `bob` tries to subscribe to her second plan
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 49500 for her second plan price which is less than 50000 so this will fail
     #[ink::test]
     #[should_panic]
     fn subscribe_works2() {
@@ -316,7 +334,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -339,6 +357,11 @@ pub mod tests {
         );
     }
 
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then `alice` tries to withdraw locked money
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn withdraw_works() {
         let mut subscrypt = Subscrypt::new();
@@ -352,7 +375,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -376,7 +399,11 @@ pub mod tests {
         set_caller(callee, accounts.alice, 0);
         subscrypt.withdraw();
     }
-
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then `eve` tries to withdraw locked money but she can't.
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     #[should_panic]
     fn withdraw_works2() {
@@ -391,7 +418,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -416,7 +443,12 @@ pub mod tests {
         set_caller(callee, accounts.eve, 0);
         subscrypt.withdraw();
     }
-
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then `bob` tries to refund locked money so he will get 10% of his money back which will be
+    /// 5000.
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn refund_works() {
         let mut subscrypt = Subscrypt::new();
@@ -429,7 +461,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -465,8 +497,18 @@ pub mod tests {
                 .refunded,
             true
         );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(callee)
+                .expect("Cannot set account balance"),
+            100
+        );
     }
-
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then `bob` tries to refund locked money so he will get 10% of his money back which will be
+    /// 5000. Then `bob` will try to refund two times but it will fail.
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     #[should_panic]
     fn refund_works2() {
@@ -479,7 +521,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -505,7 +547,11 @@ pub mod tests {
         subscrypt.refund(accounts.alice, 1);
         subscrypt.refund(accounts.alice, 1);
     }
-
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then call `check_subscription` function and will get true
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn check_subscription_works() {
         let mut subscrypt = Subscrypt::new();
@@ -518,7 +564,7 @@ pub mod tests {
 
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -545,86 +591,19 @@ pub mod tests {
             subscrypt.check_subscription(accounts.bob, accounts.alice, 1),
             true
         );
-    }
-
-    #[ink::test]
-    fn retrieve_data_with_wallet_works() {
-        let mut subscrypt = Subscrypt::new();
-        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
-            .expect("Cannot get accounts");
-        let callee =
-            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-        set_account_balance(callee, 50100);
-        set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
-            &mut subscrypt,
-            accounts.alice,
-            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
-            vec![10000, 50000],
-            vec![50, 100],
-        );
-
-        set_caller(callee, accounts.bob, 50000);
-
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "nothing important".to_string());
         assert_eq!(
-            subscrypt
-                .records
-                .get(&(accounts.bob, accounts.alice))
-                .unwrap()
-                .subscription_records
-                .get(0)
-                .unwrap()
-                .refunded,
+            subscrypt.check_subscription(accounts.bob, accounts.alice, 0),
             false
         );
-        let s = subscrypt.retrieve_data_with_wallet(accounts.alice);
-        assert_eq!(s[0].provider, accounts.alice);
-        assert_eq!(s[0].plan_index, 1);
-        assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
     }
 
-    #[ink::test]
-    fn retrieve_whole_data_with_wallet_works() {
-        let mut subscrypt = Subscrypt::new();
-        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
-            .expect("Cannot get accounts");
-        let callee =
-            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
-                .expect("Cannot get contract id");
-        set_account_balance(callee, 50100);
-        set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
-            &mut subscrypt,
-            accounts.alice,
-            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
-            vec![10000, 50000],
-            vec![50, 100],
-        );
-
-        set_caller(callee, accounts.bob, 50000);
-
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "nothing important".to_string());
-        assert_eq!(
-            subscrypt
-                .records
-                .get(&(accounts.bob, accounts.alice))
-                .unwrap()
-                .subscription_records
-                .get(0)
-                .unwrap()
-                .refunded,
-            false
-        );
-        let s = subscrypt.retrieve_whole_data_with_wallet();
-        assert_eq!(s[0].provider, accounts.alice);
-        assert_eq!(s[0].plan_index, 1);
-        assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
-    }
-
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and put it's token and pass phrase this: token, pass_phrase.
+    /// `bob` now tries to retrieve his data with that combination and he will successfully
+    /// get the data.
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn retrieve_data_with_password_works() {
         let mut subscrypt = Subscrypt::new();
@@ -635,7 +614,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -673,7 +652,85 @@ pub mod tests {
         assert_eq!(s[0].plan_index, 1);
         assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
     }
+    /// Check comments of `retrieve_data_with_password_works` function
+    #[ink::test]
+    fn retrieve_data_with_wallet_works() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+        set_account_balance(callee, 50100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![2, 2],
+            vec![10000, 50000],
+            vec![50, 100],
+        );
 
+        set_caller(callee, accounts.bob, 50000);
+
+        subscrypt.subscribe(accounts.alice, 1, [0; 32], "nothing important".to_string());
+        assert_eq!(
+            subscrypt
+                .records
+                .get(&(accounts.bob, accounts.alice))
+                .unwrap()
+                .subscription_records
+                .get(0)
+                .unwrap()
+                .refunded,
+            false
+        );
+        let s = subscrypt.retrieve_data_with_wallet(accounts.alice);
+        assert_eq!(s[0].provider, accounts.alice);
+        assert_eq!(s[0].plan_index, 1);
+        assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
+    }
+    /// Check comments of `retrieve_data_with_password_works` function
+    #[ink::test]
+    fn retrieve_whole_data_with_wallet_works() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+        set_account_balance(callee, 50100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![2, 2],
+            vec![10000, 50000],
+            vec![50, 100],
+        );
+
+        set_caller(callee, accounts.bob, 50000);
+
+        subscrypt.subscribe(accounts.alice, 1, [0; 32], "nothing important".to_string());
+        assert_eq!(
+            subscrypt
+                .records
+                .get(&(accounts.bob, accounts.alice))
+                .unwrap()
+                .subscription_records
+                .get(0)
+                .unwrap()
+                .refunded,
+            false
+        );
+        let s = subscrypt.retrieve_whole_data_with_wallet();
+        assert_eq!(s[0].provider, accounts.alice);
+        assert_eq!(s[0].plan_index, 1);
+        assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
+    }
+    /// Check comments of `retrieve_data_with_password_works` function
     #[ink::test]
     fn retrieve_whole_data_with_password_works() {
         let mut subscrypt = Subscrypt::new();
@@ -684,7 +741,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -723,6 +780,14 @@ pub mod tests {
         assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
     }
 
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and put it's token and pass phrase this: token, pass_phrase.
+    /// `bob` now tries to check his authentication data and he will try two time with two pair of token
+    /// and pass phrase and he will fail in first try and authenticate in second try
+    /// get the data.
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
     #[ink::test]
     fn check_auth_works() {
         let mut subscrypt = Subscrypt::new();
@@ -733,7 +798,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
@@ -766,6 +831,14 @@ pub mod tests {
             accounts.bob,
             accounts.alice,
             "token".parse().unwrap(),
+            "pass_phras".parse().unwrap(),
+        );
+        assert_eq!(s, false);
+
+        let s = subscrypt.check_auth(
+            accounts.bob,
+            accounts.alice,
+            "token".parse().unwrap(),
             "pass_phrase".parse().unwrap(),
         );
         assert_eq!(s, true);
@@ -783,7 +856,7 @@ pub mod tests {
                 .expect("Cannot get contract id");
         set_account_balance(callee, 90100);
         set_caller(callee, accounts.alice, 100);
-        subscrypt_provider_register_scenario(
+        subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
             vec![
