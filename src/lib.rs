@@ -415,16 +415,18 @@ pub mod subscrypt {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
                 let plan_record: PlanRecord = PlanRecord {
-                    subscription_records: vec![SubscriptionRecord {
-                        provider: provider_address,
-                        plan: consts,
-                        plan_index,
-                        subscription_time: time,
-                        meta_data_encrypted: metadata,
-                        refunded: false,
-                    }],
+                    subscription_records: Vec::new(),                  
                     pass_hash: pass,
                 };
+
+                plan_record.subscription_records.push(SubscriptionRecord {
+                    provider: provider_address,
+                    plan: consts,
+                    plan_index,
+                    subscription_time: time,
+                    meta_data_encrypted: metadata,
+                    refunded: false,
+                });
 
                 self.records.insert((caller, provider_address), plan_record);
 
@@ -452,9 +454,7 @@ pub mod subscrypt {
                 provider_address,
                 (time + consts.duration - self.start_time) / 86400,
                 (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
-            );
-
-            
+            ); 
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
