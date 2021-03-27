@@ -369,26 +369,38 @@ pub mod subscrypt {
         ) {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
-            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[plan_index.try_into().unwrap()];
-
-            assert_eq!(consts.price, self.env().transferred_balance();, "You have to pay exact plan price");
-            assert!(!consts.disabled, "Plan is currently disabled by provider");
 
             assert!(
                 !self.check_subscription(caller, provider_address, plan_index),
                 "You are already subscribed to this plan!"
             );
+
             assert!(
                 self.providers.contains_key(&provider_address),
                 "Provider not existed in the contract!"
             );
+
+            let index : usize = plan_index.try_into().unwrap();
+            let provider: &Provider = self.providers.get(&provider_address).unwrap();
+
             assert!(
-                self.providers.get(&provider_address).unwrap().plans.len()
-                    > plan_index.try_into().unwrap(),
+                provider.plans.len() > plan_index.try_into().unwrap(),
                 "Wrong plan index!"
             );
 
-                        
+            let consts: PlanConsts = provider.plans[index];
+
+            assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
+            assert!(!consts.disabled, "Plan is currently disabled by provider");
+                 
+            let addr: &Account = &provider.money_address;
+            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            assert_eq!(self.transfer(
+                    *addr,
+                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
+                ), Ok(())
+             );
+            
             if !self.users.contains_key(&caller) {
                 self.users.insert(
                     caller,
@@ -440,14 +452,9 @@ pub mod subscrypt {
                 provider_address,
                 (time + consts.duration - self.start_time) / 86400,
                 (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
-            )
-
-            let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
-            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            self.transfer(
-                *addr,
-                consts.price * (1000 - consts.max_refund_percent_policy) / 1000
             );
+
+            
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
@@ -488,11 +495,14 @@ pub mod subscrypt {
                 "You are not a registered provider"
             );
             let caller: Account = self.env().caller();
-            let withdrawing_amount : u128 = self.process(caller, self.env().block_timestamp() / 86400);
-            if withdrawing_amount  > 0 {
-                self.transfer(caller, withdrawing_amount);
+
+            // t : t.0 = withdrawing_amount, t.1 = curent_linkedList_head, t.2 = reduced_lenght
+            let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
+            if t.0  > 0 {
+                assert_eq!(self.transfer(caller, t.0), Ok(()));
             }
-            withdrawing_amount
+            self.set_head(caller, t.1, t.2);
+            t.0
         }
 
         /// `users` can use this function to easily refund their subscription as the policy of that
@@ -545,7 +555,7 @@ pub mod subscrypt {
                 .try_into()
                 .unwrap();
             // to avoid refund after plan is finished
-            assert!(spent_time_percent <= 1000);
+            assert!(spent_time_percent <= 1000, "plan is finished!");
 
             // amount of time that is remained till the end of your plan = 1000 - spent_time_percent
 
@@ -564,15 +574,18 @@ pub mod subscrypt {
                     * record.plan.price
                     / 1000;
             
-                self.transfer(
-                    self.providers.get(&provider_address).unwrap().money_address,
-                    provider_portion_locked_money
+                assert_eq!(
+                    self.transfer(
+                        self.providers.get(&provider_address).unwrap().money_address,
+                        provider_portion_locked_money
+                    ),
+                    Ok(())
                 );
             }
 
             let customer_portion_locked_money: u128 =
                 remained_time_percent * record.plan.price / 1000;
-            self.transfer(caller, customer_portion_locked_money);
+            assert_eq!(self.transfer(caller, customer_portion_locked_money), Ok(()));
 
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
             let amount = record.plan.price * record.plan.max_refund_percent_policy;
@@ -882,13 +895,14 @@ pub mod subscrypt {
         /// # arguments:
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
-        pub fn process(&mut self, provider_address: Account, day_id: u64) -> u128 {
+        pub fn process(&mut self, provider_address: Account, day_id: u64) -> (u128, u64, u128) {
             let linked_list: &mut LinkedList = &mut self
                 .providers
                 .get_mut(&provider_address)
                 .unwrap()
                 .payment_manager;
             let mut sum: u128 = 0;
+            let mut reduced_lenght = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
                 sum += self
@@ -901,15 +915,27 @@ pub mod subscrypt {
                     .get(&(provider_address, cur_id))
                     .unwrap()
                     .next_day;
-                linked_list.length -= 1;
+                reduced_lenght += 1;
                 if cur_id == linked_list.back {
                     break;
                 }
             }
-            linked_list.head = cur_id;
-            sum
+            (sum, cur_id, reduced_lenght)
+        }
+
+
+        pub fn set_head(&mut self, provider_address: Account, cur_head: u64, reduced_lenght: u128) {
+            let linked_list: &mut LinkedList = &mut self
+                    .providers
+                    .get_mut(&provider_address)
+                    .unwrap()
+                    .payment_manager;
+                linked_list.head = cur_head;
+                linked_list.length -= reduced_lenght;
         }
     }
+
+    
 
     impl Default for LinkedList {
         fn default() -> Self {
