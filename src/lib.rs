@@ -536,7 +536,7 @@ pub mod subscrypt {
         /// will be paid 16.66.
         /// Other Examples in `refund_works` and `refund_works2` in `tests/test.rs`
         #[ink(message)]
-        pub fn refund(&mut self, provider_address: AccountId, plan_index: u128) {
+        pub fn refund(&mut self, provider_address: AccountId, plan_index: u128) -> u128 {
             let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             assert!(
@@ -561,31 +561,27 @@ pub mod subscrypt {
                 .get(number)
                 .unwrap();
 
-            // it shows how much of your subscription plan is passed in range of 0 to 1000 and more (if you refund after the plan is finished)
-            let spent_time_percent: u128 = ((time - record.subscription_time) * 1000
-                / (record.plan.duration))
-                .try_into()
-                .unwrap();
-            // to avoid refund after plan is finished
-            assert!(spent_time_percent <= 1000, "plan is finished!");
 
-            // amount of time that is remained till the end of your plan = 1000 - spent_time_percent
 
-            let mut remained_time_percent = 1000 - spent_time_percent;
-            if remained_time_percent > record.plan.max_refund_percent_policy {
+            assert!(time - record.subscription_time < record.plan.duration);
+
+            let promised_amount = record.plan.price * record.plan.max_refund_percent_policy;
+            let price : u64 = (record.plan.price * 1000).try_into().unwrap();
+            let used : u64 = price * (time - record.subscription_time) / record.plan.duration;
+            let mut customer_portion_locked_money : u128 = (price - used).try_into().unwrap();
+
+            if customer_portion_locked_money > promised_amount {
                 // in this case the customer wants to refund very early so he want to get
                 // more than the amount of refund policy, so we can only give back just
                 // max_refund_percent_policy of his/her subscription. Whole locked money will go directly to
                 // account of the customer
-                remained_time_percent = record.plan.max_refund_percent_policy;
+
+                customer_portion_locked_money = promised_amount;
             } else {
                 // in this case the customer wants to refund, but he/she used most of his subscription time
                 // and now he/she will get portion of locked money, and the provider will get the rest of money
-                let provider_portion_locked_money: u128 = (record.plan.max_refund_percent_policy
-                    - remained_time_percent)
-                    * record.plan.price
-                    / 1000;
-            
+                
+                let provider_portion_locked_money = (promised_amount - customer_portion_locked_money) / 1000;
                 assert_eq!(
                     self.transfer(
                         self.providers.get(&provider_address).unwrap().money_address,
@@ -594,14 +590,10 @@ pub mod subscrypt {
                     Ok(())
                 );
             }
-
-            let customer_portion_locked_money: u128 =
-                remained_time_percent * record.plan.price / 1000;
-            assert_eq!(self.transfer(caller, customer_portion_locked_money), Ok(()));
+            assert_eq!(self.transfer(caller, customer_portion_locked_money / 1000), Ok(()));
 
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
-            let amount = record.plan.price * record.plan.max_refund_percent_policy;
-            self.remove_entry(provider_address, passed_time / 86400, amount / 1000);
+            self.remove_entry(provider_address, passed_time / 86400, promised_amount / 1000);
             self.records
                 .get_mut(&(caller, provider_address))
                 .unwrap()
@@ -609,6 +601,7 @@ pub mod subscrypt {
                 .get_mut(number)
                 .unwrap()
                 .refunded = true;
+            customer_portion_locked_money
         }
 
         /// check_auth : this function authenticates the user with token and pass_phrase
