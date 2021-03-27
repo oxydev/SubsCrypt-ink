@@ -369,11 +369,9 @@ pub mod subscrypt {
         ) {
             let caller: Account = self.env().caller();
             let time: u64 = self.env().block_timestamp();
-            let value: u128 = self.env().transferred_balance();
-            let number: usize = plan_index.try_into().unwrap();
-            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[number];
+            let consts: PlanConsts = self.providers.get(&provider_address).unwrap().plans[plan_index.try_into().unwrap()];
 
-            assert_eq!(consts.price, value, "You have to pay exact plan price");
+            assert_eq!(consts.price, self.env().transferred_balance();, "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
 
             assert!(
@@ -390,19 +388,7 @@ pub mod subscrypt {
                 "Wrong plan index!"
             );
 
-            let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
-            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
-            assert_eq!(
-                self.transfer(
-                    *addr,
-                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
-                ),
-                Ok(())
-            );
-
-
-
-
+                        
             if !self.users.contains_key(&caller) {
                 self.users.insert(
                     caller,
@@ -452,9 +438,16 @@ pub mod subscrypt {
             }
             self.add_entry(
                 provider_address,
-                (self.env().block_timestamp() + consts.duration - self.start_time) / 86400,
+                (time + consts.duration - self.start_time) / 86400,
                 (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
             )
+
+            let addr: &Account = &self.providers.get(&provider_address).unwrap().money_address;
+            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            self.transfer(
+                *addr,
+                consts.price * (1000 - consts.max_refund_percent_policy) / 1000
+            );
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
@@ -495,11 +488,11 @@ pub mod subscrypt {
                 "You are not a registered provider"
             );
             let caller: Account = self.env().caller();
-            let paid: u128 = self.process(caller, self.env().block_timestamp() / 86400);
-            if paid > 0 {
-                assert_eq!(self.transfer(caller, paid), Ok(()));
+            let withdrawing_amount : u128 = self.process(caller, self.env().block_timestamp() / 86400);
+            if withdrawing_amount  > 0 {
+                self.transfer(caller, withdrawing_amount);
             }
-            paid
+            withdrawing_amount
         }
 
         /// `users` can use this function to easily refund their subscription as the policy of that
@@ -570,18 +563,16 @@ pub mod subscrypt {
                     - remained_time_percent)
                     * record.plan.price
                     / 1000;
-                assert_eq!(
-                    self.transfer(
-                        self.providers.get(&provider_address).unwrap().money_address,
-                        provider_portion_locked_money
-                    ),
-                    Ok(())
+            
+                self.transfer(
+                    self.providers.get(&provider_address).unwrap().money_address,
+                    provider_portion_locked_money
                 );
             }
 
             let customer_portion_locked_money: u128 =
                 remained_time_percent * record.plan.price / 1000;
-            assert_eq!(self.transfer(caller, customer_portion_locked_money), Ok(()));
+            self.transfer(caller, customer_portion_locked_money);
 
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
             let amount = record.plan.price * record.plan.max_refund_percent_policy;
