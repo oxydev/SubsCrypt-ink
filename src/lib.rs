@@ -130,7 +130,6 @@ pub mod subscrypt {
         scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug,
     )]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-
     struct DailyLockedAmount {
         amount: u128,
         next_day: u64,

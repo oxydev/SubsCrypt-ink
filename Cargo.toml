@@ -36,9 +36,9 @@ std = [
     "scale/std",
     "scale-info/std",
     "ink_prelude/std",
-    #   "serde/std",
 ]
+
 ink-as-dependency = []
+
 [profile.release]
-opt-level = 1
 overflow-checks = false
