@@ -18,7 +18,7 @@
 pub mod subscrypt {
     use core::convert::TryInto;
     use ink_env::hash::Sha2x256;
-    use ink_env::{AccountId as Account, Error as Er, Error};
+    use ink_env::Error;
     use ink_prelude::string::String;
     use ink_prelude::vec::Vec;
     use ink_storage::collections::HashMap;
@@ -33,10 +33,11 @@ pub mod subscrypt {
     /// * meta_data_encrypted
     /// * refunded
     #[derive(
-        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct SubscriptionRecord {
-        pub provider: Account,
+        pub provider: AccountId,
         pub plan: PlanConsts,
         pub plan_index: u128,
         subscription_time: u64,
@@ -50,8 +51,9 @@ pub mod subscrypt {
     /// * subscription_records
     /// * pass_hash : hash of (token + pass_phrase) for authenticating user without wallet
     #[derive(
-        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct PlanRecord {
         pub subscription_records: Vec<SubscriptionRecord>,
         pass_hash: [u8; 32],
@@ -66,10 +68,10 @@ pub mod subscrypt {
         PackedLayout,
         SpreadLayout,
         Debug,
-        scale_info::TypeInfo,
         Clone,
         Copy,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct PlanConsts {
         pub duration: u64,
         pub(crate) active_session_limit: u128,
@@ -84,11 +86,12 @@ pub mod subscrypt {
     /// * money_address : provider earned money will be sent to this address
     /// * payment_manager : struct for handling refund requests
     #[derive(
-        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct Provider {
         pub(crate) plans: Vec<PlanConsts>,
-        pub(crate) money_address: Account,
+        pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
     }
 
@@ -97,10 +100,11 @@ pub mod subscrypt {
     /// * list_of_providers : list of providers that the user subscribed to
     /// * subs_crypt_pass_hash : pass hash for retrieve data in subscrypt user dashboard
     #[derive(
-        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug, 
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct User {
-        pub list_of_providers: Vec<Account>,
+        pub list_of_providers: Vec<AccountId>,
         pub subs_crypt_pass_hash: [u8; 32],
     }
 
@@ -112,8 +116,9 @@ pub mod subscrypt {
     /// will be able to easily calculate and handle refund - withdraw methods with a minimum
     /// transaction fee. Each entity of the linked-list is `PaymentAdmission` struct.
     #[derive(
-        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct LinkedList {
         pub head: u64,
         pub back: u64,
@@ -122,8 +127,10 @@ pub mod subscrypt {
 
     /// Struct that represents amount of money that can be withdraw after its due date passed.
     #[derive(
-        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, scale_info::TypeInfo,
+        scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug,
     )]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+
     struct DailyLockedAmount {
         amount: u128,
         next_day: u64,
@@ -144,15 +151,15 @@ pub mod subscrypt {
         start_time: u64,
         pub provider_register_fee: u128,
         // (provider AccountId) -> provider data
-        pub(crate) providers: HashMap<Account, Provider>,
+        pub(crate) providers: HashMap<AccountId, Provider>,
         // (user AccountId) -> user data
-        pub users: HashMap<Account, User>,
+        pub users: HashMap<AccountId, User>,
         // (provider AccountId , day_id) -> payment admission
-        daily_locked_amounts: HashMap<(Account, u64), DailyLockedAmount>,
+        daily_locked_amounts: HashMap<(AccountId, u64), DailyLockedAmount>,
         // (user AccountId, provider AccountId) -> PlanRecord struct
-        pub records: HashMap<(Account, Account), PlanRecord>,
+        pub records: HashMap<(AccountId, AccountId), PlanRecord>,
         // (user AccountId, provider AccountId, plan_index) -> index
-        plan_index_to_record_index: HashMap<(Account, Account, u128), u128>,
+        plan_index_to_record_index: HashMap<(AccountId, AccountId, u128), u128>,
     }
 
     impl Default for Subscrypt {
@@ -197,7 +204,7 @@ pub mod subscrypt {
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
             max_refund_percent_policies: Vec<u128>,
-            address: Account,
+            address: AccountId,
         ) {
             let caller = self.env().caller();
             assert!(
@@ -362,12 +369,12 @@ pub mod subscrypt {
         #[ink(message, payable)]
         pub fn subscribe(
             &mut self,
-            provider_address: Account,
+            provider_address: AccountId,
             plan_index: u128,
             pass: [u8; 32],
             metadata: String,
         ) {
-            let caller: Account = self.env().caller();
+            let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
 
             assert!(
@@ -393,7 +400,7 @@ pub mod subscrypt {
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
                  
-            let addr: &Account = &provider.money_address;
+            let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
             assert_eq!(self.transfer(
                     *addr,
@@ -414,7 +421,7 @@ pub mod subscrypt {
             if !self.records.contains_key(&(caller, provider_address)) {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
-                let plan_record: PlanRecord = PlanRecord {
+                let mut plan_record: PlanRecord = PlanRecord {
                     subscription_records: Vec::new(),                  
                     pass_hash: pass,
                 };
@@ -494,7 +501,7 @@ pub mod subscrypt {
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
             );
-            let caller: Account = self.env().caller();
+            let caller: AccountId = self.env().caller();
 
             // t : t.0 = withdrawing_amount, t.1 = curent_linkedList_head, t.2 = reduced_lenght
             let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
@@ -524,8 +531,8 @@ pub mod subscrypt {
         /// will be paid 16.66.
         /// Other Examples in `refund_works` and `refund_works2` in `tests/test.rs`
         #[ink(message)]
-        pub fn refund(&mut self, provider_address: Account, plan_index: u128) {
-            let caller: Account = self.env().caller();
+        pub fn refund(&mut self, provider_address: AccountId, plan_index: u128) {
+            let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             assert!(
                 self.check_subscription(caller, provider_address, plan_index),
@@ -608,8 +615,8 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn check_auth(
             &self,
-            user: Account,
-            provider: Account,
+            user: AccountId,
+            provider: AccountId,
             token: String,
             pass_phrase: String,
         ) -> bool {
@@ -632,7 +639,7 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(
             &self,
-            user: Account,
+            user: AccountId,
             token: String,
             phrase: String,
         ) -> Vec<SubscriptionRecord> {
@@ -650,11 +657,11 @@ pub mod subscrypt {
         /// # return value : vector of subscription records
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
-            let caller: Account = self.env().caller();
+            let caller: AccountId = self.env().caller();
             self.retrieve_whole_data(caller)
         }
 
-        fn retrieve_whole_data(&self, caller: Account) -> Vec<SubscriptionRecord> {
+        fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
             assert!(self.users.contains_key(&caller));
             let mut data: Vec<SubscriptionRecord> = Vec::new();
             let user: &User = self.users.get(&caller).unwrap();
@@ -689,8 +696,8 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn retrieve_data_with_password(
             &self,
-            user: Account,
-            provider_address: Account,
+            user: AccountId,
+            provider_address: AccountId,
             token: String,
             phrase: String,
         ) -> Vec<SubscriptionRecord> {
@@ -714,16 +721,16 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn retrieve_data_with_wallet(
             &self,
-            provider_address: Account,
+            provider_address: AccountId,
         ) -> Vec<SubscriptionRecord> {
-            let caller: Account = self.env().caller();
+            let caller: AccountId = self.env().caller();
             self.retrieve_data(caller, provider_address)
         }
 
         fn retrieve_data(
             &self,
-            caller: Account,
-            provider_address: Account,
+            caller: AccountId,
+            provider_address: AccountId,
         ) -> Vec<SubscriptionRecord> {
             assert!(self.users.contains_key(&caller));
             assert!(self.records.contains_key(&(caller, provider_address)));
@@ -755,8 +762,8 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn check_subscription(
             &self,
-            user: Account,
-            provider_address: Account,
+            user: AccountId,
+            provider_address: AccountId,
             plan_index: u128,
         ) -> bool {
             if !self
@@ -784,10 +791,10 @@ pub mod subscrypt {
             true
         }
 
-        fn transfer(&self, addr: Account, amount: u128) -> Result<(), Error> {
+        fn transfer(&self, addr: AccountId, amount: u128) -> Result<(), Error> {
             self.env().transfer(addr, amount).map_err(|err| match err {
-                ink_env::Error::BelowSubsistenceThreshold => Er::BelowSubsistenceThreshold,
-                _ => Er::TransferFailed,
+                Error::BelowSubsistenceThreshold => Error::BelowSubsistenceThreshold,
+                _ => Error::TransferFailed,
             })
         }
 
@@ -796,7 +803,7 @@ pub mod subscrypt {
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         /// * amount : money amount
-        fn add_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+        fn add_entry(&mut self, provider_address: AccountId, day_id: u64, amount: u128) {
             let linked_list: &mut LinkedList = &mut self
                 .providers
                 .get_mut(&provider_address)
@@ -884,7 +891,7 @@ pub mod subscrypt {
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         /// * amount
-        fn remove_entry(&mut self, provider_address: Account, day_id: u64, amount: u128) {
+        fn remove_entry(&mut self, provider_address: AccountId, day_id: u64, amount: u128) {
             self.daily_locked_amounts
                 .get_mut(&(provider_address, day_id))
                 .unwrap()
@@ -895,7 +902,7 @@ pub mod subscrypt {
         /// # arguments:
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
-        pub fn process(&mut self, provider_address: Account, day_id: u64) -> (u128, u64, u128) {
+        pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> (u128, u64, u128) {
             let linked_list: &mut LinkedList = &mut self
                 .providers
                 .get_mut(&provider_address)
@@ -924,7 +931,7 @@ pub mod subscrypt {
         }
 
 
-        pub fn set_head(&mut self, provider_address: Account, cur_head: u64, reduced_lenght: u128) {
+        pub fn set_head(&mut self, provider_address: AccountId, cur_head: u64, reduced_lenght: u128) {
             let linked_list: &mut LinkedList = &mut self
                     .providers
                     .get_mut(&provider_address)
