@@ -505,7 +505,15 @@ pub mod subscrypt {
             if t.0  > 0 {
                 assert_eq!(self.transfer(caller, t.0), Ok(()));
             }
-            self.set_head(caller, t.1, t.2);
+
+            let linked_list: &mut LinkedList = &mut self
+                    .providers
+                    .get_mut(&provider_address)
+                    .unwrap()
+                    .payment_manager;
+                linked_list.head = t.1;
+                linked_list.length -= t.2;
+                
             t.0
         }
 
@@ -925,17 +933,6 @@ pub mod subscrypt {
                 }
             }
             (sum, cur_id, reduced_length)
-        }
-
-
-        pub fn set_head(&mut self, provider_address: AccountId, cur_head: u64, reduced_lenght: u128) {
-            let linked_list: &mut LinkedList = &mut self
-                    .providers
-                    .get_mut(&provider_address)
-                    .unwrap()
-                    .payment_manager;
-                linked_list.head = cur_head;
-                linked_list.length -= reduced_lenght;
         }
     }
 
