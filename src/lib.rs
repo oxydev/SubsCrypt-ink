@@ -23,7 +23,7 @@ pub mod subscrypt {
     use ink_prelude::vec::Vec;
     use ink_storage::collections::HashMap;
     use ink_storage::traits::{PackedLayout, SpreadLayout};
-
+    use ink_prelude::vec;
     /// This struct represents a subscription record
     /// # fields:
     /// * provider
@@ -420,19 +420,17 @@ pub mod subscrypt {
             if !self.records.contains_key(&(caller, provider_address)) {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
-                let mut plan_record: PlanRecord = PlanRecord {
-                    subscription_records: Vec::new(),                  
+                let plan_record: PlanRecord = PlanRecord {
+                    subscription_records: vec![SubscriptionRecord {
+                        provider: provider_address,
+                        plan: consts,
+                        plan_index,
+                        subscription_time: time,
+                        meta_data_encrypted: metadata,
+                        refunded: false,
+                    }],                  
                     pass_hash: pass,
                 };
-
-                plan_record.subscription_records.push(SubscriptionRecord {
-                    provider: provider_address,
-                    plan: consts,
-                    plan_index,
-                    subscription_time: time,
-                    meta_data_encrypted: metadata,
-                    refunded: false,
-                });
 
                 self.records.insert((caller, provider_address), plan_record);
 
@@ -502,7 +500,7 @@ pub mod subscrypt {
             );
             let caller: AccountId = self.env().caller();
 
-            // t : t.0 = withdrawing_amount, t.1 = curent_linkedList_head, t.2 = reduced_lenght
+            // t : t.0 = withdrawing_amount, t.1 = current_linkedList_head, t.2 = reduced_length
             let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
             if t.0  > 0 {
                 assert_eq!(self.transfer(caller, t.0), Ok(()));
@@ -908,7 +906,7 @@ pub mod subscrypt {
                 .unwrap()
                 .payment_manager;
             let mut sum: u128 = 0;
-            let mut reduced_lenght = 0;
+            let mut reduced_length = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
                 sum += self
@@ -921,12 +919,12 @@ pub mod subscrypt {
                     .get(&(provider_address, cur_id))
                     .unwrap()
                     .next_day;
-                reduced_lenght += 1;
+                reduced_length += 1;
                 if cur_id == linked_list.back {
                     break;
                 }
             }
-            (sum, cur_id, reduced_lenght)
+            (sum, cur_id, reduced_length)
         }
 
 
