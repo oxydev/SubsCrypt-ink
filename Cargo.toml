@@ -11,9 +11,8 @@ ink_env = { version = "3.0.0-rc3", default-features = false }
 ink_storage = { version = "3.0.0-rc3", default-features = false }
 ink_lang = { version = "3.0.0-rc3", default-features = false }
 ink_prelude = { version ="3.0.0-rc3", default-features = false  }
-scale = { package = "parity-scale-codec", version = "2.0", default-features = false, features = ["derive"] }
-scale-info = { version = "0.6", default-features = false, features = ["derive"], optional = false }
-
+scale = { package = "parity-scale-codec", version = "2.0.1", default-features = false, features = ["derive"] }
+scale-info = { version = "0.6.0", default-features = false, features = ["derive"], optional = true }
 # Should be removed once bitvecto-rs/bitvec#105 is resolved
 funty = {version = "=1.1", default-features = false}
 
@@ -37,6 +36,9 @@ std = [
     "scale/std",
     "scale-info/std",
     "ink_prelude/std",
-    #   "serde/std",
 ]
+
 ink-as-dependency = []
+
+[profile.release]
+overflow-checks = false

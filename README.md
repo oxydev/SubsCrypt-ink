@@ -21,23 +21,23 @@ cargo +nightly test
 
 ## Building
 
-To build the WASM of your contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
+To build the WASM of your contract and metadata, you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
 
 ```bash
-cargo +nightly build
+cargo +nightly contract build
 ```
 
 This command will take some minutes and the output will be something like this:
 
 ```bash
-Your contract is ready. You can find it here:
-/root/test/SubsCrypt-ink/target/SubsCrypt.wasm
-```
+Original wasm size: 99.1K, Optimized: 68.0K
 
-To build the metadata json of contract you can clone and change directory to the ink project of SubsCrypt and then you have to run this line:
+Your contract artifacts are ready. You can find them in:
+/yourDirectory/target/ink
 
-```bash 
-cargo +nightly contract generate-metadata
+  - SubsCrypt.contract (code + metadata)
+  - SubsCrypt.wasm (the contract's code)
+  - metadata.json (the contract's metadata)
 ```
 
 You can also use the pre-built version of our code and access to the WASM and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/SubsCrypt.wasm) and [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/metadata.json).
