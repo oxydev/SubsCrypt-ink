@@ -508,7 +508,7 @@ pub mod subscrypt {
 
             let linked_list: &mut LinkedList = &mut self
                     .providers
-                    .get_mut(&provider_address)
+                    .get_mut(&caller)
                     .unwrap()
                     .payment_manager;
                 linked_list.head = t.1;
@@ -611,12 +611,15 @@ pub mod subscrypt {
                 .refunded = true;
         }
 
-        /// check_auth : this function authenticates the user with token and pass_phrase
-        /// # arguments:
-        /// * user
-        /// * provider
-        /// * plan_index
-        /// * token and pass_phrase : these are for authenticating
+        /// This function indicate if `user` can authenticate with given `token` and `pass_phrase`
+        /// # Note
+        /// `user` are encouraged to have different `token` and `pass_phrase` for each provider
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn check_auth(
             &self,
@@ -636,11 +639,17 @@ pub mod subscrypt {
             false
         }
 
-        /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
-        /// # arguments:
-        /// * user
-        /// * token and phrase : subscrypt passphrase
-        /// # return value : vector of subscription records
+        /// `user` can use this function to retrieve her whole subscription history to
+        /// different providers.
+        /// # Note
+        /// `user` has to provide their main `token` and `phrase` which will be used in
+        /// SubsCrypt dashboard
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_whole_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(
             &self,
@@ -658,46 +667,31 @@ pub mod subscrypt {
             self.retrieve_whole_data(user)
         }
 
-        /// retrieve_whole_data_with_wallet : retrieve all user data.
-        /// # return value : vector of subscription records
+        /// `user` can use this function to retrieve her whole subscription history to
+        /// different providers with their wallet.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_whole_data_with_wallet_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
             let caller: AccountId = self.env().caller();
             self.retrieve_whole_data(caller)
         }
 
-        fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
-            assert!(self.users.contains_key(&caller));
-            let mut data: Vec<SubscriptionRecord> = Vec::new();
-            let user: &User = self.users.get(&caller).unwrap();
-            for i in 0..user.list_of_providers.len() {
-                let plan_records: &PlanRecord = self
-                    .records
-                    .get(&(caller, user.list_of_providers[i]))
-                    .unwrap();
-                for i in 0..plan_records.subscription_records.len() {
-                    let k = SubscriptionRecord {
-                        provider: plan_records.subscription_records[i].provider,
-                        plan: plan_records.subscription_records[i].plan,
-                        plan_index: plan_records.subscription_records[i].plan_index,
-                        subscription_time: plan_records.subscription_records[i].subscription_time,
-                        meta_data_encrypted: plan_records.subscription_records[i]
-                            .meta_data_encrypted
-                            .clone(),
-                        refunded: plan_records.subscription_records[i].refunded,
-                    };
-                    data.push(k);
-                }
-            }
-            data
-        }
-
-        /// retrieve_data_with_password : retrieve user data when wallet is not available.
-        /// # arguments:
-        /// * user
-        /// * provider_address
-        /// * token and phrase
-        /// # return value: vector of subscription records from a specific provider
+        /// `user` can use this function to retrieve her subscriptions history for a specific
+        /// provider.
+        ///
+        /// # Note
+        /// `user` has to provide their `token` and `phrase` for that provider.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_data_with_password(
             &self,
@@ -719,10 +713,14 @@ pub mod subscrypt {
             self.retrieve_data(user, provider_address)
         }
 
-        /// retrieve_data_with_wallet : retrieve user data whit wallet.
-        /// # arguments:
-        /// * provider_address
-        /// # return value: vector of subscription records from a specific provider
+        /// `user` can use this function to retrieve her subscriptions history for a specific
+        /// provider with her wallet.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_data_with_wallet(
             &self,
@@ -732,38 +730,18 @@ pub mod subscrypt {
             self.retrieve_data(caller, provider_address)
         }
 
-        fn retrieve_data(
-            &self,
-            caller: AccountId,
-            provider_address: AccountId,
-        ) -> Vec<SubscriptionRecord> {
-            assert!(self.users.contains_key(&caller));
-            assert!(self.records.contains_key(&(caller, provider_address)));
-            let mut data: Vec<SubscriptionRecord> = Vec::new();
 
-            let plan_records: &PlanRecord = self.records.get(&(caller, provider_address)).unwrap();
-            for i in 0..plan_records.subscription_records.len() {
-                let k = SubscriptionRecord {
-                    provider: plan_records.subscription_records[i].provider,
-                    plan: plan_records.subscription_records[i].plan,
-                    plan_index: plan_records.subscription_records[i].plan_index,
-                    subscription_time: plan_records.subscription_records[i].subscription_time,
-                    meta_data_encrypted: plan_records.subscription_records[i]
-                        .meta_data_encrypted
-                        .clone(),
-                    refunded: plan_records.subscription_records[i].refunded,
-                };
-                data.push(k);
-            }
-            data
-        }
-
-        /// check_subscription : provides can use this function to check if user has authority to plan or not
-        /// # arguments:
-        /// * user : user address
-        /// * provider_address
-        /// * plan_index
-        /// # return value: boolean that indicates the user has authority or not
+        /// This function can be called to check if `user` has a valid subscription to the
+        /// specific `plan_index` of `provider`.
+        ///
+        /// # Note
+        /// if `user` refunded or her subscription is expired then this function will return false
+        ///
+        /// # Returns
+        /// `bool` which means if `user` is subsribed or not
+        ///
+        /// # Example
+        /// Examples in `check_subscription_works` in `tests/test.rs`
         #[ink(message)]
         pub fn check_subscription(
             &self,
@@ -794,6 +772,42 @@ pub mod subscrypt {
                 return false;
             }
             true
+        }
+
+        fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
+            assert!(self.users.contains_key(&caller));
+            let mut data: Vec<SubscriptionRecord> = Vec::new();
+            let user: &User = self.users.get(&caller).unwrap();
+            for i in 0..user.list_of_providers.len() {
+                data.append(&mut self.retrieve_data(caller, user.list_of_providers[i]));
+            }
+            data
+        }
+
+        fn retrieve_data(
+            &self,
+            caller: AccountId,
+            provider_address: AccountId,
+        ) -> Vec<SubscriptionRecord> {
+            assert!(self.users.contains_key(&caller));
+            assert!(self.records.contains_key(&(caller, provider_address)));
+            let mut data: Vec<SubscriptionRecord> = Vec::new();
+
+            let plan_records: &PlanRecord = self.records.get(&(caller, provider_address)).unwrap();
+            for i in 0..plan_records.subscription_records.len() {
+                let k = SubscriptionRecord {
+                    provider: plan_records.subscription_records[i].provider,
+                    plan: plan_records.subscription_records[i].plan,
+                    plan_index: plan_records.subscription_records[i].plan_index,
+                    subscription_time: plan_records.subscription_records[i].subscription_time,
+                    meta_data_encrypted: plan_records.subscription_records[i]
+                        .meta_data_encrypted
+                        .clone(),
+                    refunded: plan_records.subscription_records[i].refunded,
+                };
+                data.push(k);
+            }
+            data
         }
 
         fn transfer(&self, addr: AccountId, amount: u128) -> Result<(), Error> {
