@@ -23,7 +23,7 @@ pub mod subscrypt {
     use ink_prelude::vec::Vec;
     use ink_storage::collections::HashMap;
     use ink_storage::traits::{PackedLayout, SpreadLayout};
-
+    use ink_prelude::vec;
     /// This struct represents a subscription record
     /// # fields:
     /// * provider
@@ -420,19 +420,17 @@ pub mod subscrypt {
             if !self.records.contains_key(&(caller, provider_address)) {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
-                let mut plan_record: PlanRecord = PlanRecord {
-                    subscription_records: Vec::new(),                  
+                let plan_record: PlanRecord = PlanRecord {
+                    subscription_records: vec![SubscriptionRecord {
+                        provider: provider_address,
+                        plan: consts,
+                        plan_index,
+                        subscription_time: time,
+                        meta_data_encrypted: metadata,
+                        refunded: false,
+                    }],                  
                     pass_hash: pass,
                 };
-
-                plan_record.subscription_records.push(SubscriptionRecord {
-                    provider: provider_address,
-                    plan: consts,
-                    plan_index,
-                    subscription_time: time,
-                    meta_data_encrypted: metadata,
-                    refunded: false,
-                });
 
                 self.records.insert((caller, provider_address), plan_record);
 
@@ -502,12 +500,20 @@ pub mod subscrypt {
             );
             let caller: AccountId = self.env().caller();
 
-            // t : t.0 = withdrawing_amount, t.1 = curent_linkedList_head, t.2 = reduced_lenght
+            // t : t.0 = withdrawing_amount, t.1 = current_linkedList_head, t.2 = reduced_length
             let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
             if t.0  > 0 {
                 assert_eq!(self.transfer(caller, t.0), Ok(()));
             }
-            self.set_head(caller, t.1, t.2);
+
+            let linked_list: &mut LinkedList = &mut self
+                    .providers
+                    .get_mut(&caller)
+                    .unwrap()
+                    .payment_manager;
+                linked_list.head = t.1;
+                linked_list.length -= t.2;
+
             t.0
         }
 
@@ -530,7 +536,7 @@ pub mod subscrypt {
         /// will be paid 16.66.
         /// Other Examples in `refund_works` and `refund_works2` in `tests/test.rs`
         #[ink(message)]
-        pub fn refund(&mut self, provider_address: AccountId, plan_index: u128) {
+        pub fn refund(&mut self, provider_address: AccountId, plan_index: u128) -> u128 {
             let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
             assert!(
@@ -555,31 +561,27 @@ pub mod subscrypt {
                 .get(number)
                 .unwrap();
 
-            // it shows how much of your subscription plan is passed in range of 0 to 1000 and more (if you refund after the plan is finished)
-            let spent_time_percent: u128 = ((time - record.subscription_time) * 1000
-                / (record.plan.duration))
-                .try_into()
-                .unwrap();
-            // to avoid refund after plan is finished
-            assert!(spent_time_percent <= 1000, "plan is finished!");
 
-            // amount of time that is remained till the end of your plan = 1000 - spent_time_percent
 
-            let mut remained_time_percent = 1000 - spent_time_percent;
-            if remained_time_percent > record.plan.max_refund_percent_policy {
+            assert!(time - record.subscription_time < record.plan.duration);
+
+            let promised_amount = record.plan.price * record.plan.max_refund_percent_policy;
+            let price : u64 = (record.plan.price * 1000).try_into().unwrap();
+            let used : u64 = price * (time - record.subscription_time) / record.plan.duration;
+            let mut customer_portion_locked_money : u128 = (price - used).try_into().unwrap();
+
+            if customer_portion_locked_money > promised_amount {
                 // in this case the customer wants to refund very early so he want to get
                 // more than the amount of refund policy, so we can only give back just
                 // max_refund_percent_policy of his/her subscription. Whole locked money will go directly to
                 // account of the customer
-                remained_time_percent = record.plan.max_refund_percent_policy;
+
+                customer_portion_locked_money = promised_amount;
             } else {
                 // in this case the customer wants to refund, but he/she used most of his subscription time
                 // and now he/she will get portion of locked money, and the provider will get the rest of money
-                let provider_portion_locked_money: u128 = (record.plan.max_refund_percent_policy
-                    - remained_time_percent)
-                    * record.plan.price
-                    / 1000;
-            
+                
+                let provider_portion_locked_money = (promised_amount - customer_portion_locked_money) / 1000;
                 assert_eq!(
                     self.transfer(
                         self.providers.get(&provider_address).unwrap().money_address,
@@ -588,14 +590,10 @@ pub mod subscrypt {
                     Ok(())
                 );
             }
-
-            let customer_portion_locked_money: u128 =
-                remained_time_percent * record.plan.price / 1000;
-            assert_eq!(self.transfer(caller, customer_portion_locked_money), Ok(()));
+            assert_eq!(self.transfer(caller, customer_portion_locked_money / 1000), Ok(()));
 
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
-            let amount = record.plan.price * record.plan.max_refund_percent_policy;
-            self.remove_entry(provider_address, passed_time / 86400, amount / 1000);
+            self.remove_entry(provider_address, passed_time / 86400, promised_amount / 1000);
             self.records
                 .get_mut(&(caller, provider_address))
                 .unwrap()
@@ -603,14 +601,18 @@ pub mod subscrypt {
                 .get_mut(number)
                 .unwrap()
                 .refunded = true;
+            customer_portion_locked_money
         }
 
-        /// check_auth : this function authenticates the user with token and pass_phrase
-        /// # arguments:
-        /// * user
-        /// * provider
-        /// * plan_index
-        /// * token and pass_phrase : these are for authenticating
+        /// This function indicate if `user` can authenticate with given `token` and `pass_phrase`
+        /// # Note
+        /// `user` are encouraged to have different `token` and `pass_phrase` for each provider
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn check_auth(
             &self,
@@ -630,11 +632,17 @@ pub mod subscrypt {
             false
         }
 
-        /// retrieve_whole_data_with_password : retrieve all user data when wallet is not available.
-        /// # arguments:
-        /// * user
-        /// * token and phrase : subscrypt passphrase
-        /// # return value : vector of subscription records
+        /// `user` can use this function to retrieve her whole subscription history to
+        /// different providers.
+        /// # Note
+        /// `user` has to provide their main `token` and `phrase` which will be used in
+        /// SubsCrypt dashboard
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_whole_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_whole_data_with_password(
             &self,
@@ -652,46 +660,31 @@ pub mod subscrypt {
             self.retrieve_whole_data(user)
         }
 
-        /// retrieve_whole_data_with_wallet : retrieve all user data.
-        /// # return value : vector of subscription records
+        /// `user` can use this function to retrieve her whole subscription history to
+        /// different providers with their wallet.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_whole_data_with_wallet_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_whole_data_with_wallet(&self) -> Vec<SubscriptionRecord> {
             let caller: AccountId = self.env().caller();
             self.retrieve_whole_data(caller)
         }
 
-        fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
-            assert!(self.users.contains_key(&caller));
-            let mut data: Vec<SubscriptionRecord> = Vec::new();
-            let user: &User = self.users.get(&caller).unwrap();
-            for i in 0..user.list_of_providers.len() {
-                let plan_records: &PlanRecord = self
-                    .records
-                    .get(&(caller, user.list_of_providers[i]))
-                    .unwrap();
-                for i in 0..plan_records.subscription_records.len() {
-                    let k = SubscriptionRecord {
-                        provider: plan_records.subscription_records[i].provider,
-                        plan: plan_records.subscription_records[i].plan,
-                        plan_index: plan_records.subscription_records[i].plan_index,
-                        subscription_time: plan_records.subscription_records[i].subscription_time,
-                        meta_data_encrypted: plan_records.subscription_records[i]
-                            .meta_data_encrypted
-                            .clone(),
-                        refunded: plan_records.subscription_records[i].refunded,
-                    };
-                    data.push(k);
-                }
-            }
-            data
-        }
-
-        /// retrieve_data_with_password : retrieve user data when wallet is not available.
-        /// # arguments:
-        /// * user
-        /// * provider_address
-        /// * token and phrase
-        /// # return value: vector of subscription records from a specific provider
+        /// `user` can use this function to retrieve her subscriptions history for a specific
+        /// provider.
+        ///
+        /// # Note
+        /// `user` has to provide their `token` and `phrase` for that provider.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_data_with_password(
             &self,
@@ -713,10 +706,14 @@ pub mod subscrypt {
             self.retrieve_data(user, provider_address)
         }
 
-        /// retrieve_data_with_wallet : retrieve user data whit wallet.
-        /// # arguments:
-        /// * provider_address
-        /// # return value: vector of subscription records from a specific provider
+        /// `user` can use this function to retrieve her subscriptions history for a specific
+        /// provider with her wallet.
+        ///
+        /// # Returns
+        /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
+        ///
+        /// # Example
+        /// Examples in `retrieve_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
         pub fn retrieve_data_with_wallet(
             &self,
@@ -726,38 +723,18 @@ pub mod subscrypt {
             self.retrieve_data(caller, provider_address)
         }
 
-        fn retrieve_data(
-            &self,
-            caller: AccountId,
-            provider_address: AccountId,
-        ) -> Vec<SubscriptionRecord> {
-            assert!(self.users.contains_key(&caller));
-            assert!(self.records.contains_key(&(caller, provider_address)));
-            let mut data: Vec<SubscriptionRecord> = Vec::new();
 
-            let plan_records: &PlanRecord = self.records.get(&(caller, provider_address)).unwrap();
-            for i in 0..plan_records.subscription_records.len() {
-                let k = SubscriptionRecord {
-                    provider: plan_records.subscription_records[i].provider,
-                    plan: plan_records.subscription_records[i].plan,
-                    plan_index: plan_records.subscription_records[i].plan_index,
-                    subscription_time: plan_records.subscription_records[i].subscription_time,
-                    meta_data_encrypted: plan_records.subscription_records[i]
-                        .meta_data_encrypted
-                        .clone(),
-                    refunded: plan_records.subscription_records[i].refunded,
-                };
-                data.push(k);
-            }
-            data
-        }
-
-        /// check_subscription : provides can use this function to check if user has authority to plan or not
-        /// # arguments:
-        /// * user : user address
-        /// * provider_address
-        /// * plan_index
-        /// # return value: boolean that indicates the user has authority or not
+        /// This function can be called to check if `user` has a valid subscription to the
+        /// specific `plan_index` of `provider`.
+        ///
+        /// # Note
+        /// if `user` refunded or her subscription is expired then this function will return false
+        ///
+        /// # Returns
+        /// `bool` which means if `user` is subsribed or not
+        ///
+        /// # Example
+        /// Examples in `check_subscription_works` in `tests/test.rs`
         #[ink(message)]
         pub fn check_subscription(
             &self,
@@ -788,6 +765,42 @@ pub mod subscrypt {
                 return false;
             }
             true
+        }
+
+        fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
+            assert!(self.users.contains_key(&caller));
+            let mut data: Vec<SubscriptionRecord> = Vec::new();
+            let user: &User = self.users.get(&caller).unwrap();
+            for i in 0..user.list_of_providers.len() {
+                data.append(&mut self.retrieve_data(caller, user.list_of_providers[i]));
+            }
+            data
+        }
+
+        fn retrieve_data(
+            &self,
+            caller: AccountId,
+            provider_address: AccountId,
+        ) -> Vec<SubscriptionRecord> {
+            assert!(self.users.contains_key(&caller));
+            assert!(self.records.contains_key(&(caller, provider_address)));
+            let mut data: Vec<SubscriptionRecord> = Vec::new();
+
+            let plan_records: &PlanRecord = self.records.get(&(caller, provider_address)).unwrap();
+            for i in 0..plan_records.subscription_records.len() {
+                let k = SubscriptionRecord {
+                    provider: plan_records.subscription_records[i].provider,
+                    plan: plan_records.subscription_records[i].plan,
+                    plan_index: plan_records.subscription_records[i].plan_index,
+                    subscription_time: plan_records.subscription_records[i].subscription_time,
+                    meta_data_encrypted: plan_records.subscription_records[i]
+                        .meta_data_encrypted
+                        .clone(),
+                    refunded: plan_records.subscription_records[i].refunded,
+                };
+                data.push(k);
+            }
+            data
         }
 
         fn transfer(&self, addr: AccountId, amount: u128) -> Result<(), Error> {
@@ -908,7 +921,7 @@ pub mod subscrypt {
                 .unwrap()
                 .payment_manager;
             let mut sum: u128 = 0;
-            let mut reduced_lenght = 0;
+            let mut reduced_length = 0;
             let mut cur_id: u64 = linked_list.head;
             while day_id >= cur_id {
                 sum += self
@@ -921,23 +934,12 @@ pub mod subscrypt {
                     .get(&(provider_address, cur_id))
                     .unwrap()
                     .next_day;
-                reduced_lenght += 1;
+                reduced_length += 1;
                 if cur_id == linked_list.back {
                     break;
                 }
             }
-            (sum, cur_id, reduced_lenght)
-        }
-
-
-        pub fn set_head(&mut self, provider_address: AccountId, cur_head: u64, reduced_lenght: u128) {
-            let linked_list: &mut LinkedList = &mut self
-                    .providers
-                    .get_mut(&provider_address)
-                    .unwrap()
-                    .payment_manager;
-                linked_list.head = cur_head;
-                linked_list.length -= reduced_lenght;
+            (sum, cur_id, reduced_length)
         }
     }
 

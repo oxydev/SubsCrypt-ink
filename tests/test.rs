@@ -458,7 +458,8 @@ pub mod tests {
         let callee =
             ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
                 .expect("Cannot get contract id");
-
+        set_account_balance(accounts.alice, 100);
+        set_account_balance(accounts.bob, 50000);
         set_account_balance(callee, 50100);
         set_caller(callee, accounts.alice, 100);
         subscrypt_provider_register_routine(
@@ -496,6 +497,16 @@ pub mod tests {
                 .unwrap()
                 .refunded,
             true
+        );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(accounts.alice)
+                .expect("Cannot set account balance"),
+            45100
+        );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(accounts.bob)
+                .expect("Cannot set account balance"),
+            55000
         );
         assert_eq!(
             ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(callee)
