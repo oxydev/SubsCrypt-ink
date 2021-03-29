@@ -18,7 +18,7 @@ Then you have to install ink! command line utility which will make setting up Su
 cargo install cargo-contract --vers 0.10.0 --force --locked
 ```
 
-You also need the [binaryen](https://github.com/WebAssembly/binaryen) package installed on your computer, you can use npm to install it:
+You also need the [binaryen](https://github.com/WebAssembly/binaryen) package installed on your computer which is used to optimize the WebAssembly bytecode of the contract, you can use npm to install it:
 
 ```bash
 npm install -g binaryen --force
