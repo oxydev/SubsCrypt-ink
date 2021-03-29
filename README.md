@@ -21,7 +21,7 @@ cargo install cargo-contract --vers 0.10.0 --force --locked
 You also need the [binaryen](https://github.com/WebAssembly/binaryen) package installed on your computer which is used to optimize the WebAssembly bytecode of the contract, you can use npm to install it:
 
 ```bash
-npm install -g binaryen --force
+npm install -g binaryen
 ```
 
 ## Testing
