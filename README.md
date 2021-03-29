@@ -3,6 +3,26 @@
 [![Rust](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml/badge.svg)](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml)
 
 ink! implementation of SubsCrypt. for more information please visit [online docs](https://oxydev.github.io/SubsCrypt-docs/#/)
+## Installing
+
+Please make sure that you have these prerequisites installed on your computer:
+
+```bash
+rustup component add rust-src --toolchain nightly
+rustup target add wasm32-unknown-unknown --toolchain stable
+```
+
+Then you have to install ink! command line utility which will make setting up Substrate smart contract projects easier:
+
+```bash
+cargo install cargo-contract --vers 0.10.0 --force --locked
+```
+
+You also need the [binaryen](https://github.com/WebAssembly/binaryen) package installed on your computer, you can use npm to install it:
+
+```bash
+npm install -g binaryen --force
+```
 
 ## Testing
 
