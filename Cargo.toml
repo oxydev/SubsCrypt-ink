@@ -1,5 +1,5 @@
 [package]
-name = "SubsCrypt"
+name = "subscrypt"
 version = "3.0.0-rc3"
 authors = ["Saber Zafarpoor <szafarpoor@ce.sharif.edu>","Hadi Esna <esnaa@ce.sharif.edu>"]
 edition = "2018"
