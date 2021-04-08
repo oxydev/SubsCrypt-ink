@@ -61,7 +61,6 @@ pub mod subscrypt {
 
     /// This struct stores configs of plan which is set by provider
     /// # Note
-    // TODO perhaps the name should be max_refund_permille_policy (https://www.wikiwand.com/en/Per_mille) - otherwise it's confusing unless someone reads the line below.
     /// `max_refund_permille_policy` is out of 1000
     #[derive(
         scale::Encode,
@@ -134,6 +133,12 @@ pub mod subscrypt {
     struct DailyLockedAmount {
         amount: u128,
         next_day: u64,
+    }
+
+    pub struct ProcessReturningData {
+        withdrawing_amount : u128,
+        current_linked_list_head : u64,
+        reduced_length : u128,
     }
 
     /// Main struct of contract
@@ -329,19 +334,18 @@ pub mod subscrypt {
         /// Examples in `change_disable_works` in `tests/test.rs`
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
-            let caller = self.env().caller();
-            // TODO match here
+            let caller = self.env().caller();            
             let number: usize = plan_index.try_into().unwrap();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            assert!(
-                self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(),
-                "please select a valid plan"
-            );
-            let already_enable = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !already_enable;
+            match self.providers.get_mut(&caller) {
+                Some(provider) => {
+                    assert!(
+                        provider.plans.len() > plan_index.try_into().unwrap(),
+                        "please select a valid plan"
+                    );
+                    provider.plans[number].disabled = !provider.plans[number].disabled
+                },
+                None => panic!("You should first register in the contract!")
+            }
         }
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
@@ -384,14 +388,12 @@ pub mod subscrypt {
                 "You are already subscribed to this plan!"
             );
 
-            // TODO match here
-            assert!(
-                self.providers.contains_key(&provider_address),
-                "Provider not existed in the contract!"
-            );
+            let provider = match self.providers.get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("Provider not existed in the contract!")
+            };
 
             let index : usize = plan_index.try_into().unwrap();
-            let provider: &Provider = self.providers.get(&provider_address).unwrap();
 
             assert!(
                 provider.plans.len() > plan_index.try_into().unwrap(),
@@ -490,18 +492,15 @@ pub mod subscrypt {
         /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
-            // TODO match & unwrap here
             assert!(
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
             );
-            let caller: AccountId = self.env().caller();
 
-            // t : t.0 = withdrawing_amount, t.1 = current_linkedList_head, t.2 = reduced_length
-            // TODO turn T into a struct for clarity
-            let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
-            if t.0  > 0 {
-                assert_eq!(self.transfer(caller, t.0), Ok(()));
+            let caller: AccountId = self.env().caller();
+            let t  = self.process(caller, self.env().block_timestamp() / 86400);
+            if t.withdrawing_amount  > 0 {
+                assert_eq!(self.transfer(caller, t.withdrawing_amount), Ok(()));
             }
 
             let linked_list: &mut LinkedList = &mut self
@@ -509,10 +508,9 @@ pub mod subscrypt {
                     .get_mut(&caller)
                     .unwrap()
                     .payment_manager;
-                linked_list.head = t.1;
-                linked_list.length -= t.2;
-
-            t.0
+            linked_list.head = t.current_linked_list_head;
+            linked_list.length -= t.reduced_length;
+            t.withdrawing_amount
         }
 
         /// `users` can use this function to easily refund their subscription as the policy of that
@@ -541,16 +539,14 @@ pub mod subscrypt {
                 self.check_subscription(caller, provider_address, plan_index),
                 "You are not in this plan or already refunded"
             );
-            // TODO unwrap here
-            assert!(self.plan_index_to_record_index.contains_key(&(
-                caller,
-                provider_address,
-                plan_index
-            )));
-            let last_index: &u128 = self
-                .plan_index_to_record_index
-                .get(&(caller, provider_address, plan_index))
-                .unwrap();
+
+            let last_index = match self
+            .plan_index_to_record_index
+            .get(&(caller, provider_address, plan_index)) {
+                Some(index) => index,
+                None => panic!("index is not valid!")
+            };
+
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self
                 .records
@@ -912,8 +908,7 @@ pub mod subscrypt {
         /// # arguments:
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
-        // TODO should return a meaningful struct
-        pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> (u128, u64, u128) {
+        pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> ProcessReturningData {
             let linked_list: &mut LinkedList = &mut self
                 .providers
                 .get_mut(&provider_address)
@@ -938,7 +933,12 @@ pub mod subscrypt {
                     break;
                 }
             }
-            (sum, cur_id, reduced_length)
+
+            ProcessReturningData{
+                withdrawing_amount: sum,
+                current_linked_list_head: cur_id,
+                reduced_length: reduced_length
+            }
         }
     }
 
