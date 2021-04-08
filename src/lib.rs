@@ -620,15 +620,14 @@ pub mod subscrypt {
             token: String,
             pass_phrase: String,
         ) -> bool {
-            if !self.records.contains_key(&(user, provider)) {
-                return false;
+            return match self.records.get(&(user, provider)) {
+                Some(record) => {
+                    let encodable = [token, pass_phrase];
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    return encoded == record.pass_hash
+                },
+                None => false
             }
-            let encodable = [token, pass_phrase];
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
-            if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
-                return true;
-            }
-            false
         }
 
         /// `user` can use this function to retrieve her whole subscription history to

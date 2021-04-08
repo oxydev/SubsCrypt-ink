@@ -846,6 +846,15 @@ pub mod tests {
         );
         assert_eq!(s, false);
 
+        // No record for user charlie & provider alice
+        let s = subscrypt.check_auth(
+            accounts.charlie,
+            accounts.alice,
+            "token".parse().unwrap(),
+            "pass_phrase".parse().unwrap(),
+        );
+        assert_eq!(s, false);
+
         let s = subscrypt.check_auth(
             accounts.bob,
             accounts.alice,
