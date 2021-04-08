@@ -62,7 +62,7 @@ pub mod subscrypt {
     /// This struct stores configs of plan which is set by provider
     /// # Note
     // TODO perhaps the name should be max_refund_permille_policy (https://www.wikiwand.com/en/Per_mille) - otherwise it's confusing unless someone reads the line below.
-    /// `max_refund_percent_policy` is out of 1000
+    /// `max_refund_permille_policy` is out of 1000
     #[derive(
         scale::Encode,
         scale::Decode,
@@ -77,7 +77,7 @@ pub mod subscrypt {
         pub duration: u64,
         pub(crate) active_session_limit: u128,
         pub(crate) price: u128,
-        pub(crate) max_refund_percent_policy: u128,
+        pub(crate) max_refund_permille_policy: u128,
         pub disabled: bool,
     }
 
@@ -203,7 +203,7 @@ pub mod subscrypt {
             durations: Vec<u64>,
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
-            max_refund_percent_policies: Vec<u128>,
+            max_refund_permille_policies: Vec<u128>,
             address: AccountId,
         ) {
             let caller = self.env().caller();
@@ -227,7 +227,7 @@ pub mod subscrypt {
                 durations,
                 active_session_limits,
                 prices,
-                max_refund_percent_policies,
+                max_refund_permille_policies,
             );
         }
 
@@ -246,12 +246,12 @@ pub mod subscrypt {
             durations: Vec<u64>,
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
-            max_refund_percent_policies: Vec<u128>,
+            max_refund_permille_policies: Vec<u128>,
         ) {
             assert_eq!(durations.len(), active_session_limits.len());
             assert_eq!(prices.len(), active_session_limits.len());
             assert_eq!(
-                max_refund_percent_policies.len(),
+                max_refund_permille_policies.len(),
                 active_session_limits.len()
             );
 
@@ -267,7 +267,7 @@ pub mod subscrypt {
                     duration: durations[i],
                     active_session_limit: active_session_limits[i],
                     price: prices[i],
-                    max_refund_percent_policy: max_refund_percent_policies[i],
+                    max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
                 });
             }
@@ -292,7 +292,7 @@ pub mod subscrypt {
             duration: u64,
             active_session_limit: u128,
             price: u128,
-            max_refund_percent_policy: u128,
+            max_refund_permille_policies: u128,
             disabled: bool,
         ) {
             let number: usize = plan_index.try_into().unwrap();
@@ -311,7 +311,7 @@ pub mod subscrypt {
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
             plan.price = price;
-            plan.max_refund_percent_policy = max_refund_percent_policy;
+            plan.max_refund_permille_policy = max_refund_permille_policies;
             plan.disabled = disabled;
         }
 
@@ -346,7 +346,7 @@ pub mod subscrypt {
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
         ///
-        /// In this function, we will lock (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000
+        /// In this function, we will lock (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000
         /// in the `Linked List` of the contract and will transfer the rest of paid money directly to provider
         ///
         /// # Note
@@ -404,10 +404,10 @@ pub mod subscrypt {
             assert!(!consts.disabled, "Plan is currently disabled by provider");
                  
             let addr: &AccountId = &provider.money_address;
-            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
             assert_eq!(self.transfer(
                     *addr,
-                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
+                    consts.price * (1000 - consts.max_refund_permille_policy) / 1000
                 ), Ok(())
              );
             
@@ -453,7 +453,7 @@ pub mod subscrypt {
             self.add_entry(
                 provider_address,
                 (time + consts.duration - self.start_time) / 86400,
-                (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
+                (self.env().transferred_balance() * consts.max_refund_permille_policy) / 1000,
             );
         }
 
@@ -517,7 +517,7 @@ pub mod subscrypt {
 
         /// `users` can use this function to easily refund their subscription as the policy of that
         /// specific plan was set. The `users` will be paid back at most
-        /// (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000 and it will be linearly
+        /// (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000 and it will be linearly
         /// decreased as time passed and will get to 0. The `provider` will get 0 at least and will linearly
         /// get more if `user` refund later.
         ///
@@ -528,7 +528,7 @@ pub mod subscrypt {
         /// If `provider` does not exist
         ///
         /// # Examples
-        /// Assume that `plan.max_refund_percent_policy` = 500 and `plan.price` = 100 the duration
+        /// Assume that `plan.max_refund_permille_policy` = 500 and `plan.price` = 100 the duration
         /// of the plan is a month(30 days month). if `user` refund in first half of the month, then the user will
         /// be paid 50. if `user` refund in day 20th of month then `user` will be paid 33.33 and `provider`
         /// will be paid 16.66.
@@ -564,7 +564,7 @@ pub mod subscrypt {
 
             assert!(time - record.subscription_time < record.plan.duration);
 
-            let promised_amount = record.plan.price * record.plan.max_refund_percent_policy;
+            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy;
             let price : u64 = (record.plan.price * 1000).try_into().unwrap();
             let used : u64 = price * (time - record.subscription_time) / record.plan.duration;
             let mut customer_portion_locked_money : u128 = (price - used).try_into().unwrap();
@@ -572,7 +572,7 @@ pub mod subscrypt {
             if customer_portion_locked_money > promised_amount {
                 // in this case the customer wants to refund very early so he want to get
                 // more than the amount of refund policy, so we can only give back just
-                // max_refund_percent_policy of his/her subscription. Whole locked money will go directly to
+                // max_refund_permille_policy of his/her subscription. Whole locked money will go directly to
                 // account of the customer
 
                 customer_portion_locked_money = promised_amount;
