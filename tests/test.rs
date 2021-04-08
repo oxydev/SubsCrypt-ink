@@ -66,7 +66,7 @@ pub mod tests {
     /// insufficient payment of staking value of policy of contract.
     #[ink::test]
     #[should_panic]
-    fn provider_register_works2() {
+    fn provider_register_fails_insufficient_payment() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
@@ -141,7 +141,7 @@ pub mod tests {
     /// `alice` has two plans. One is daily and other is monthly.
     /// `alice` tries to change config of her third plan which doesn't exist so it will fail
     #[ink::test]
-    #[should_panic]
+    #[should_panic(expected = "please select a valid plan")]
     fn edit_plan_works2() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()

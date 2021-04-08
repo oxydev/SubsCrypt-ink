@@ -255,11 +255,12 @@ pub mod subscrypt {
             );
 
             let caller = self.env().caller();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            let provider = self.providers.get_mut(&caller).unwrap();
+
+            let provider = match self.providers.get_mut(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
             for i in 0..durations.len() {
                 provider.plans.push(PlanConsts {
                     duration: durations[i],
@@ -295,16 +296,16 @@ pub mod subscrypt {
         ) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            assert!(
-                self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(),
-                "please select a valid plan"
-            );
-            let provider = self.providers.get_mut(&caller).unwrap();
-            let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
+
+            let provider = match self.providers.get_mut(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
+            let mut plan: &mut PlanConsts = match provider.plans.get_mut(number) {
+                Some(x) => x,
+                None => panic!("please select a valid plan")
+            };
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
