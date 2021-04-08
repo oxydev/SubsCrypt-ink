@@ -61,6 +61,7 @@ pub mod subscrypt {
 
     /// This struct stores configs of plan which is set by provider
     /// # Note
+    // TODO perhaps the name should be max_refund_permille_policy (https://www.wikiwand.com/en/Per_mille) - otherwise it's confusing unless someone reads the line below.
     /// `max_refund_percent_policy` is out of 1000
     #[derive(
         scale::Encode,
@@ -489,6 +490,7 @@ pub mod subscrypt {
         /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
+            // TODO match & unwrap here
             assert!(
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
@@ -496,6 +498,7 @@ pub mod subscrypt {
             let caller: AccountId = self.env().caller();
 
             // t : t.0 = withdrawing_amount, t.1 = current_linkedList_head, t.2 = reduced_length
+            // TODO turn T into a struct for clarity
             let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
             if t.0  > 0 {
                 assert_eq!(self.transfer(caller, t.0), Ok(()));
@@ -538,6 +541,7 @@ pub mod subscrypt {
                 self.check_subscription(caller, provider_address, plan_index),
                 "You are not in this plan or already refunded"
             );
+            // TODO unwrap here
             assert!(self.plan_index_to_record_index.contains_key(&(
                 caller,
                 provider_address,
@@ -909,6 +913,7 @@ pub mod subscrypt {
         /// # arguments:
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
+        // TODO should return a meaningful struct
         pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> (u128, u64, u128) {
             let linked_list: &mut LinkedList = &mut self
                 .providers
