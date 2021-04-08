@@ -467,11 +467,11 @@ pub mod subscrypt {
         /// If `caller` does not exist in `users`
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
-            assert!(self.users.contains_key(&self.env().caller()));
-            self.users
-                .get_mut(&self.env().caller())
-                .unwrap()
-                .subs_crypt_pass_hash = pass;
+            // TODO tests missing!
+            match self.users.get_mut(&self.env().caller()) {
+                Some(x) => x.subs_crypt_pass_hash = pass,
+                None => panic!("User doesn't exist!")
+            };
         }
 
         /// This function is used when providers want to collect the locked money for refund policy
