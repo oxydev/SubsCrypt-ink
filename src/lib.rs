@@ -329,6 +329,7 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
             let caller = self.env().caller();
+            // TODO match here
             let number: usize = plan_index.try_into().unwrap();
             assert!(
                 self.providers.contains_key(&caller),
@@ -382,6 +383,7 @@ pub mod subscrypt {
                 "You are already subscribed to this plan!"
             );
 
+            // TODO match here
             assert!(
                 self.providers.contains_key(&provider_address),
                 "Provider not existed in the contract!"
@@ -418,7 +420,21 @@ pub mod subscrypt {
                 );
             }
 
-            if !self.records.contains_key(&(caller, provider_address)) {
+            if let Some(plan_record) = self.records.get_mut(&(caller, provider_address)) {
+                self.plan_index_to_record_index.insert(
+                    (caller, provider_address, plan_index),
+                    plan_record.subscription_records.len().try_into().unwrap(),
+                );
+
+                plan_record.subscription_records.push(SubscriptionRecord {
+                    provider: provider_address,
+                    plan: consts,
+                    plan_index,
+                    subscription_time: time,
+                    meta_data_encrypted: metadata,
+                    refunded: false,
+                });
+            } else {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
                 let plan_record: PlanRecord = PlanRecord {
@@ -437,23 +453,6 @@ pub mod subscrypt {
 
                 self.plan_index_to_record_index
                     .insert((caller, provider_address, plan_index), 0);
-            } else {
-                let plan_record: &mut PlanRecord =
-                    self.records.get_mut(&(caller, provider_address)).unwrap();
-
-                self.plan_index_to_record_index.insert(
-                    (caller, provider_address, plan_index),
-                    plan_record.subscription_records.len().try_into().unwrap(),
-                );
-
-                plan_record.subscription_records.push(SubscriptionRecord {
-                    provider: provider_address,
-                    plan: consts,
-                    plan_index,
-                    subscription_time: time,
-                    meta_data_encrypted: metadata,
-                    refunded: false,
-                });
             }
             self.add_entry(
                 provider_address,
