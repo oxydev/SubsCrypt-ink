@@ -492,6 +492,7 @@ pub mod subscrypt {
         /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
+            // TODO match & unwrap here
             assert!(
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
