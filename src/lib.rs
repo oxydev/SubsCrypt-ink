@@ -61,7 +61,6 @@ pub mod subscrypt {
 
     /// This struct stores configs of plan which is set by provider
     /// # Note
-    // TODO perhaps the name should be max_refund_permille_policy (https://www.wikiwand.com/en/Per_mille) - otherwise it's confusing unless someone reads the line below.
     /// `max_refund_permille_policy` is out of 1000
     #[derive(
         scale::Encode,

@@ -30,13 +30,13 @@ pub mod utils {
         durations: Vec<u64>,
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
-        max_refund_percent_policies: Vec<u128>,
+        max_refund_permille_policies: Vec<u128>,
     ) {
         subscrypt.provider_register(
             durations.clone(),
             active_session_limits.clone(),
             prices.clone(),
-            max_refund_percent_policies.clone(),
+            max_refund_permille_policies.clone(),
             account,
         );
         for i in 0..durations.len() {
@@ -81,8 +81,8 @@ pub mod utils {
                     .plans
                     .get(i)
                     .unwrap()
-                    .max_refund_percent_policy,
-                max_refund_percent_policies[i]
+                    .max_refund_permille_policy,
+                max_refund_permille_policies[i]
             );
         }
         assert_eq!(
@@ -143,7 +143,7 @@ pub mod utils {
                 .plans
                 .get(1)
                 .unwrap()
-                .max_refund_percent_policy,
+                .max_refund_permille_policy,
             max_refund
         );
         assert_eq!(
@@ -158,13 +158,13 @@ pub mod utils {
         durations: Vec<u64>,
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
-        max_refund_percent_policies: Vec<u128>,
+        max_refund_permille_policies: Vec<u128>,
     ) {
         subscrypt.add_plan(
             durations.clone(),
             active_session_limits.clone(),
             prices.clone(),
-            max_refund_percent_policies.clone(),
+            max_refund_permille_policies.clone(),
         );
         assert_eq!(
             subscrypt
@@ -207,8 +207,8 @@ pub mod utils {
                 .plans
                 .get(2)
                 .unwrap()
-                .max_refund_percent_policy,
-            max_refund_percent_policies[0]
+                .max_refund_permille_policy,
+            max_refund_permille_policies[0]
         );
         assert_eq!(
             subscrypt.providers.get(&account).unwrap().money_address,
