@@ -420,32 +420,27 @@ pub mod subscrypt {
                 );
             }
 
+            let subscription_record = SubscriptionRecord {
+                provider: provider_address,
+                plan: consts,
+                plan_index,
+                subscription_time: time,
+                meta_data_encrypted: metadata,
+                refunded: false,
+            };
+
             if let Some(plan_record) = self.records.get_mut(&(caller, provider_address)) {
                 self.plan_index_to_record_index.insert(
                     (caller, provider_address, plan_index),
                     plan_record.subscription_records.len().try_into().unwrap(),
                 );
 
-                plan_record.subscription_records.push(SubscriptionRecord {
-                    provider: provider_address,
-                    plan: consts,
-                    plan_index,
-                    subscription_time: time,
-                    meta_data_encrypted: metadata,
-                    refunded: false,
-                });
+                plan_record.subscription_records.push(subscription_record);
             } else {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
                 let plan_record: PlanRecord = PlanRecord {
-                    subscription_records: vec![SubscriptionRecord {
-                        provider: provider_address,
-                        plan: consts,
-                        plan_index,
-                        subscription_time: time,
-                        meta_data_encrypted: metadata,
-                        refunded: false,
-                    }],                  
+                    subscription_records: vec![subscription_record],                  
                     pass_hash: pass,
                 };
 
@@ -458,7 +453,7 @@ pub mod subscrypt {
                 provider_address,
                 (time + consts.duration - self.start_time) / 86400,
                 (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
-            ); 
+            );
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
