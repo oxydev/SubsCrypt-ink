@@ -281,6 +281,64 @@ pub mod tests {
     }
 
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// then alice will change her subscrypt_pass
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
+    #[ink::test]
+    fn set_subscrypt_pass_works() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+        set_account_balance(callee, 50100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![2, 2],
+            vec![10000, 50000],
+            vec![50, 100],
+        );
+
+        set_caller(callee, accounts.bob, 50000);
+
+        let t: String = "token".to_string();
+        let p: String = "pass_phrase".to_string();
+        let encodable = [t, p];
+        let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+        ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
+        subscrypt.subscribe(accounts.alice, 1, output, "nothing important".to_string());
+        assert_eq!(
+            subscrypt
+                .users
+                .get(&accounts.bob)
+                .unwrap()
+                .list_of_providers
+                .get(0)
+                .unwrap(),
+            &accounts.alice
+        );
+        subscrypt.retrieve_whole_data_with_password(accounts.bob, "token".parse().unwrap(), "pass_phrase".parse().unwrap());
+
+        let t: String = "new_token".to_string();
+        let p: String = "new_pass_phrase".to_string();
+        let encodable = [t, p];
+        let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+        ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
+        subscrypt.set_subscrypt_pass(output);
+        subscrypt.retrieve_whole_data_with_password(accounts.bob, "new_token".parse().unwrap(), "new_pass_phrase".parse().unwrap());
+
+    }
+
+
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
     /// `alice` has two plans. One is daily and other is monthly.
     /// `alice` also pays 100 because of the policy of the registering in contract.
     /// `bob` pays 50000 for her second plan price
@@ -318,6 +376,7 @@ pub mod tests {
             &accounts.alice
         );
     }
+
     /// Simple scenario that `alice` register as a provider and `bob` tries to subscribe to her second plan
     /// `alice` has two plans. One is daily and other is monthly.
     /// `alice` also pays 100 because of the policy of the registering in contract.
