@@ -253,11 +253,12 @@ pub mod subscrypt {
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
         ) {
-            assert_eq!(durations.len(), active_session_limits.len());
-            assert_eq!(prices.len(), active_session_limits.len());
+            assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
             assert_eq!(
                 max_refund_permille_policies.len(),
-                active_session_limits.len()
+                active_session_limits.len(),
+                "Wrong Number of Args"
             );
 
             let caller = self.env().caller();

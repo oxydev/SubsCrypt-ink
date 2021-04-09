@@ -65,7 +65,7 @@ pub mod tests {
     /// Simple scenario that `alice` tries to register as a provider but it fails because of
     /// insufficient payment of staking value of policy of contract.
     #[ink::test]
-    #[should_panic]
+    #[should_panic(expected = "You have to pay a minimum amount to register in the contract!")]
     fn provider_register_fails_insufficient_payment() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -87,8 +87,8 @@ pub mod tests {
     /// Simple scenario that `alice` tries to register as a provider but it fails because of
     /// wrong args(length of vectors of plan configs are not equal).
     #[ink::test]
-    #[should_panic]
-    fn provider_register_works3() {
+    #[should_panic(expected = "Wrong Number of Args")]
+    fn provider_register_fails_wrong_arguments() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
@@ -142,7 +142,7 @@ pub mod tests {
     /// `alice` tries to change config of her third plan which doesn't exist so it will fail
     #[ink::test]
     #[should_panic(expected = "please select a valid plan")]
-    fn edit_plan_works2() {
+    fn edit_plan_fails_invalid_plan_index() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
@@ -203,8 +203,8 @@ pub mod tests {
     /// `alice` has two plans. One is daily and other is monthly.
     /// `alice` tries to add more plans but obviously she is doing it wrong
     #[ink::test]
-    #[should_panic]
-    fn add_plan_works2() {
+    #[should_panic(expected = "Wrong Number of Args")]
+    fn add_plan_fails_wrong_arguments() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
@@ -382,8 +382,8 @@ pub mod tests {
     /// `alice` also pays 100 because of the policy of the registering in contract.
     /// `bob` pays 49500 for her second plan price which is less than 50000 so this will fail
     #[ink::test]
-    #[should_panic]
-    fn subscribe_works2() {
+    #[should_panic(expected = "You have to pay exact plan price")]
+    fn subscribe_fails_insufficient_paying() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
@@ -464,8 +464,8 @@ pub mod tests {
     /// `alice` also pays 100 because of the policy of the registering in contract.
     /// `bob` pays 50000 for her second plan price
     #[ink::test]
-    #[should_panic]
-    fn withdraw_works2() {
+    #[should_panic(expected = "You are not a registered provider")]
+    fn withdraw_fails_provider_must_be_registered() {
         let mut subscrypt = Subscrypt::new();
 
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
@@ -580,8 +580,8 @@ pub mod tests {
     /// `alice` also pays 100 because of the policy of the registering in contract.
     /// `bob` pays 50000 for her second plan price
     #[ink::test]
-    #[should_panic]
-    fn refund_works2() {
+    #[should_panic(expected = "You are not in this plan or already refunded")]
+    fn refund_fails_double_refund() {
         let mut subscrypt = Subscrypt::new();
         let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
             .expect("Cannot get accounts");
