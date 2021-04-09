@@ -61,7 +61,7 @@ pub mod subscrypt {
 
     /// This struct stores configs of plan which is set by provider
     /// # Note
-    /// `max_refund_percent_policy` is out of 1000
+    /// `max_refund_permille_policy` is out of 1000
     #[derive(
         scale::Encode,
         scale::Decode,
@@ -76,7 +76,7 @@ pub mod subscrypt {
         pub duration: u64,
         pub(crate) active_session_limit: u128,
         pub(crate) price: u128,
-        pub(crate) max_refund_percent_policy: u128,
+        pub(crate) max_refund_permille_policy: u128,
         pub disabled: bool,
     }
 
@@ -133,6 +133,12 @@ pub mod subscrypt {
     struct DailyLockedAmount {
         amount: u128,
         next_day: u64,
+    }
+
+    pub struct ProcessReturningData {
+        withdrawing_amount : u128,
+        current_linked_list_head : u64,
+        reduced_length : u128,
     }
 
     /// Main struct of contract
@@ -202,7 +208,7 @@ pub mod subscrypt {
             durations: Vec<u64>,
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
-            max_refund_percent_policies: Vec<u128>,
+            max_refund_permille_policies: Vec<u128>,
             address: AccountId,
         ) {
             let caller = self.env().caller();
@@ -226,7 +232,7 @@ pub mod subscrypt {
                 durations,
                 active_session_limits,
                 prices,
-                max_refund_percent_policies,
+                max_refund_permille_policies,
             );
         }
 
@@ -245,27 +251,29 @@ pub mod subscrypt {
             durations: Vec<u64>,
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
-            max_refund_percent_policies: Vec<u128>,
+            max_refund_permille_policies: Vec<u128>,
         ) {
-            assert_eq!(durations.len(), active_session_limits.len());
-            assert_eq!(prices.len(), active_session_limits.len());
+            assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
             assert_eq!(
-                max_refund_percent_policies.len(),
-                active_session_limits.len()
+                max_refund_permille_policies.len(),
+                active_session_limits.len(),
+                "Wrong Number of Args"
             );
 
             let caller = self.env().caller();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            let provider = self.providers.get_mut(&caller).unwrap();
+
+            let provider = match self.providers.get_mut(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
             for i in 0..durations.len() {
                 provider.plans.push(PlanConsts {
                     duration: durations[i],
                     active_session_limit: active_session_limits[i],
                     price: prices[i],
-                    max_refund_percent_policy: max_refund_percent_policies[i],
+                    max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
                 });
             }
@@ -290,26 +298,26 @@ pub mod subscrypt {
             duration: u64,
             active_session_limit: u128,
             price: u128,
-            max_refund_percent_policy: u128,
+            max_refund_permille_policies: u128,
             disabled: bool,
         ) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            assert!(
-                self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(),
-                "please select a valid plan"
-            );
-            let provider = self.providers.get_mut(&caller).unwrap();
-            let mut plan: &mut PlanConsts = provider.plans.get_mut(number).unwrap();
+
+            let provider = match self.providers.get_mut(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
+            let mut plan: &mut PlanConsts = match provider.plans.get_mut(number) {
+                Some(x) => x,
+                None => panic!("please select a valid plan")
+            };
 
             plan.duration = duration;
             plan.active_session_limit = active_session_limit;
             plan.price = price;
-            plan.max_refund_percent_policy = max_refund_percent_policy;
+            plan.max_refund_permille_policy = max_refund_permille_policies;
             plan.disabled = disabled;
         }
 
@@ -327,23 +335,23 @@ pub mod subscrypt {
         /// Examples in `change_disable_works` in `tests/test.rs`
         #[ink(message)]
         pub fn change_disable(&mut self, plan_index: u128) {
-            let caller = self.env().caller();
+            let caller = self.env().caller();            
             let number: usize = plan_index.try_into().unwrap();
-            assert!(
-                self.providers.contains_key(&caller),
-                "You should first register in the contract!"
-            );
-            assert!(
-                self.providers.get(&caller).unwrap().plans.len() > plan_index.try_into().unwrap(),
-                "please select a valid plan"
-            );
-            let already_enable = self.providers.get(&caller).unwrap().plans[number].disabled;
-            self.providers.get_mut(&caller).unwrap().plans[number].disabled = !already_enable;
+            match self.providers.get_mut(&caller) {
+                Some(provider) => {
+                    assert!(
+                        provider.plans.len() > plan_index.try_into().unwrap(),
+                        "please select a valid plan"
+                    );
+                    provider.plans[number].disabled = !provider.plans[number].disabled
+                },
+                None => panic!("You should first register in the contract!")
+            }
         }
 
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
         ///
-        /// In this function, we will lock (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000
+        /// In this function, we will lock (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000
         /// in the `Linked List` of the contract and will transfer the rest of paid money directly to provider
         ///
         /// # Note
@@ -381,13 +389,12 @@ pub mod subscrypt {
                 "You are already subscribed to this plan!"
             );
 
-            assert!(
-                self.providers.contains_key(&provider_address),
-                "Provider not existed in the contract!"
-            );
+            let provider = match self.providers.get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("Provider not existed in the contract!")
+            };
 
             let index : usize = plan_index.try_into().unwrap();
-            let provider: &Provider = self.providers.get(&provider_address).unwrap();
 
             assert!(
                 provider.plans.len() > plan_index.try_into().unwrap(),
@@ -400,10 +407,10 @@ pub mod subscrypt {
             assert!(!consts.disabled, "Plan is currently disabled by provider");
                  
             let addr: &AccountId = &provider.money_address;
-            // send money to money_address (1000 - plan.max_refund_percent_policy) / 1000;
+            // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
             assert_eq!(self.transfer(
                     *addr,
-                    consts.price * (1000 - consts.max_refund_percent_policy) / 1000
+                    consts.price * (1000 - consts.max_refund_permille_policy) / 1000
                 ), Ok(())
              );
             
@@ -417,18 +424,27 @@ pub mod subscrypt {
                 );
             }
 
-            if !self.records.contains_key(&(caller, provider_address)) {
+            let subscription_record = SubscriptionRecord {
+                provider: provider_address,
+                plan: consts,
+                plan_index,
+                subscription_time: time,
+                meta_data_encrypted: metadata,
+                refunded: false,
+            };
+
+            if let Some(plan_record) = self.records.get_mut(&(caller, provider_address)) {
+                self.plan_index_to_record_index.insert(
+                    (caller, provider_address, plan_index),
+                    plan_record.subscription_records.len().try_into().unwrap(),
+                );
+
+                plan_record.subscription_records.push(subscription_record);
+            } else {
                 self.users.get_mut(&caller).unwrap().list_of_providers.push(provider_address);
 
                 let plan_record: PlanRecord = PlanRecord {
-                    subscription_records: vec![SubscriptionRecord {
-                        provider: provider_address,
-                        plan: consts,
-                        plan_index,
-                        subscription_time: time,
-                        meta_data_encrypted: metadata,
-                        refunded: false,
-                    }],                  
+                    subscription_records: vec![subscription_record],                  
                     pass_hash: pass,
                 };
 
@@ -436,29 +452,12 @@ pub mod subscrypt {
 
                 self.plan_index_to_record_index
                     .insert((caller, provider_address, plan_index), 0);
-            } else {
-                let plan_record: &mut PlanRecord =
-                    self.records.get_mut(&(caller, provider_address)).unwrap();
-
-                self.plan_index_to_record_index.insert(
-                    (caller, provider_address, plan_index),
-                    plan_record.subscription_records.len().try_into().unwrap(),
-                );
-
-                plan_record.subscription_records.push(SubscriptionRecord {
-                    provider: provider_address,
-                    plan: consts,
-                    plan_index,
-                    subscription_time: time,
-                    meta_data_encrypted: metadata,
-                    refunded: false,
-                });
             }
             self.add_entry(
                 provider_address,
                 (time + consts.duration - self.start_time) / 86400,
-                (self.env().transferred_balance() * consts.max_refund_percent_policy) / 1000,
-            ); 
+                (self.env().transferred_balance() * consts.max_refund_permille_policy) / 1000,
+            );
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
@@ -472,11 +471,10 @@ pub mod subscrypt {
         /// If `caller` does not exist in `users`
         #[ink(message)]
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
-            assert!(self.users.contains_key(&self.env().caller()));
-            self.users
-                .get_mut(&self.env().caller())
-                .unwrap()
-                .subs_crypt_pass_hash = pass;
+            match self.users.get_mut(&self.env().caller()) {
+                Some(x) => x.subs_crypt_pass_hash = pass,
+                None => panic!("User doesn't exist!")
+            };
         }
 
         /// This function is used when providers want to collect the locked money for refund policy
@@ -494,16 +492,16 @@ pub mod subscrypt {
         /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
+            // TODO match & unwrap here
             assert!(
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
             );
-            let caller: AccountId = self.env().caller();
 
-            // t : t.0 = withdrawing_amount, t.1 = current_linkedList_head, t.2 = reduced_length
-            let t : (u128, u64, u128) = self.process(caller, self.env().block_timestamp() / 86400);
-            if t.0  > 0 {
-                assert_eq!(self.transfer(caller, t.0), Ok(()));
+            let caller: AccountId = self.env().caller();
+            let t  = self.process(caller, self.env().block_timestamp() / 86400);
+            if t.withdrawing_amount  > 0 {
+                assert_eq!(self.transfer(caller, t.withdrawing_amount), Ok(()));
             }
 
             let linked_list: &mut LinkedList = &mut self
@@ -511,15 +509,14 @@ pub mod subscrypt {
                     .get_mut(&caller)
                     .unwrap()
                     .payment_manager;
-                linked_list.head = t.1;
-                linked_list.length -= t.2;
-
-            t.0
+            linked_list.head = t.current_linked_list_head;
+            linked_list.length -= t.reduced_length;
+            t.withdrawing_amount
         }
 
         /// `users` can use this function to easily refund their subscription as the policy of that
         /// specific plan was set. The `users` will be paid back at most
-        /// (`plan.max_refund_percent_policy` * `transferred_balance`) / 1000 and it will be linearly
+        /// (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000 and it will be linearly
         /// decreased as time passed and will get to 0. The `provider` will get 0 at least and will linearly
         /// get more if `user` refund later.
         ///
@@ -530,7 +527,7 @@ pub mod subscrypt {
         /// If `provider` does not exist
         ///
         /// # Examples
-        /// Assume that `plan.max_refund_percent_policy` = 500 and `plan.price` = 100 the duration
+        /// Assume that `plan.max_refund_permille_policy` = 500 and `plan.price` = 100 the duration
         /// of the plan is a month(30 days month). if `user` refund in first half of the month, then the user will
         /// be paid 50. if `user` refund in day 20th of month then `user` will be paid 33.33 and `provider`
         /// will be paid 16.66.
@@ -543,15 +540,14 @@ pub mod subscrypt {
                 self.check_subscription(caller, provider_address, plan_index),
                 "You are not in this plan or already refunded"
             );
-            assert!(self.plan_index_to_record_index.contains_key(&(
-                caller,
-                provider_address,
-                plan_index
-            )));
-            let last_index: &u128 = self
-                .plan_index_to_record_index
-                .get(&(caller, provider_address, plan_index))
-                .unwrap();
+
+            let last_index = match self
+            .plan_index_to_record_index
+            .get(&(caller, provider_address, plan_index)) {
+                Some(index) => index,
+                None => panic!("index is not valid!")
+            };
+
             let number: usize = (*last_index).try_into().unwrap();
             let record: &SubscriptionRecord = self
                 .records
@@ -565,7 +561,7 @@ pub mod subscrypt {
 
             assert!(time - record.subscription_time < record.plan.duration);
 
-            let promised_amount = record.plan.price * record.plan.max_refund_percent_policy;
+            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy;
             let price : u64 = (record.plan.price * 1000).try_into().unwrap();
             let used : u64 = price * (time - record.subscription_time) / record.plan.duration;
             let mut customer_portion_locked_money : u128 = (price - used).try_into().unwrap();
@@ -573,7 +569,7 @@ pub mod subscrypt {
             if customer_portion_locked_money > promised_amount {
                 // in this case the customer wants to refund very early so he want to get
                 // more than the amount of refund policy, so we can only give back just
-                // max_refund_percent_policy of his/her subscription. Whole locked money will go directly to
+                // max_refund_permille_policy of his/her subscription. Whole locked money will go directly to
                 // account of the customer
 
                 customer_portion_locked_money = promised_amount;
@@ -621,15 +617,14 @@ pub mod subscrypt {
             token: String,
             pass_phrase: String,
         ) -> bool {
-            if !self.records.contains_key(&(user, provider)) {
-                return false;
+            return match self.records.get(&(user, provider)) {
+                Some(record) => {
+                    let encodable = [token, pass_phrase];
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    return encoded == record.pass_hash
+                },
+                None => false
             }
-            let encodable = [token, pass_phrase];
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
-            if encoded == self.records.get(&(user, provider)).unwrap().pass_hash {
-                return true;
-            }
-            false
         }
 
         /// `user` can use this function to retrieve her whole subscription history to
@@ -914,7 +909,7 @@ pub mod subscrypt {
         /// # arguments:
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
-        pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> (u128, u64, u128) {
+        pub fn process(&mut self, provider_address: AccountId, day_id: u64) -> ProcessReturningData {
             let linked_list: &mut LinkedList = &mut self
                 .providers
                 .get_mut(&provider_address)
@@ -939,7 +934,12 @@ pub mod subscrypt {
                     break;
                 }
             }
-            (sum, cur_id, reduced_length)
+
+            ProcessReturningData{
+                withdrawing_amount: sum,
+                current_linked_list_head: cur_id,
+                reduced_length: reduced_length
+            }
         }
     }
 
