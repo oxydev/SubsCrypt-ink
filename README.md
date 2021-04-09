@@ -2,7 +2,13 @@
 
 [![Rust](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml/badge.svg)](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml)
 
-ink! implementation of SubsCrypt. for more information please visit [online docs](https://oxydev.github.io/SubsCrypt-docs/#/)
+This project is honored to be funded by Web3 Foundation grant program. You can find more info [here](https://github.com/w3f/Open-Grants-Program/blob/master/applications/SubsCrypt.md).
+
+
+<img src="https://github.com/oxydev/SubsCrypt-docs/raw/master/images/web3%20foundation_grants_badge_black.png" width="300"/> <img src="https://github.com/oxydev/SubsCrypt-docs/raw/master/images/web3%20foundation_grants_badge_white.png" width="300"/> 
+
+This is ink! implementation of SubsCrypt. For more information please visit [online docs](https://oxydev.github.io/SubsCrypt-docs/#/).
+
 ## Installing
 
 Please make sure that you have these prerequisites installed on your computer:
