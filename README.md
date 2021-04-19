@@ -65,5 +65,5 @@ Your contract artifacts are ready. You can find them in:
   - SubsCrypt.wasm (the contract's code)
   - metadata.json (the contract's metadata)
 ```
-
+ 
 You can also use the pre-built version of our code and access to the WASM and metadata files, [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/SubsCrypt.wasm) and [here](https://github.com/oxydev/SubsCrypt-ink/blob/main/deploy/metadata.json).
