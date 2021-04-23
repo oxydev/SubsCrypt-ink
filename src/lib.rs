@@ -177,16 +177,14 @@ pub mod subscrypt {
     pub struct ProviderRegisterEvent {
         #[ink(topic)]
         address: AccountId,
-        durations: Vec<u64>,
-        prices: Vec<u128>,
     }
 
     #[ink(event)]
     pub struct AddPlanEvent {
         #[ink(topic)]
         owner: AccountId,
-        durations: Vec<u64>,
-        prices: Vec<u128>,
+        duration: u64,
+        price: u128,
     }
 
     #[ink(event)]
@@ -195,7 +193,6 @@ pub mod subscrypt {
         provider: AccountId,
         #[ink(topic)]
         plan_index: u128,
-        metadata: String,
     }
 
     impl Subscrypt {
@@ -260,9 +257,7 @@ pub mod subscrypt {
                 max_refund_permille_policies,
             );
             self.env().emit_event(ProviderRegisterEvent {
-                address,
-                durations,
-                prices,
+                address: address,
             });
         }
 
@@ -297,7 +292,6 @@ pub mod subscrypt {
                 Some(x) => x,
                 None => panic!("You should first register in the contract!"),
             };
-
             for i in 0..durations.len() {
                 provider.plans.push(PlanConsts {
                     duration: durations[i],
@@ -307,12 +301,13 @@ pub mod subscrypt {
                     disabled: false,
                 });
             }
-
-            self.env().emit_event(AddPlanEvent {
-                owner: caller,
-                durations,
-                prices,
-            });
+            for i in 0..durations.len() {
+                self.env().emit_event(AddPlanEvent {
+                    owner: caller,
+                    duration: durations[i],
+                    price: prices[i],
+                });
+            }
         }
 
         /// Editing previously created plans of the `caller`
@@ -497,8 +492,7 @@ pub mod subscrypt {
 
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
-                metadata,
-                plan_index,
+                plan_index: plan_index,
             });
         }
 
