@@ -173,6 +173,31 @@ pub mod subscrypt {
         }
     }
 
+    #[ink(event)]
+    pub struct ProviderRegisterEvent {
+        #[ink(topic)]
+        address: AccountId,
+        durations: Vec<u64>,
+        prices: Vec<u128>,
+    }
+
+    #[ink(event)]
+    pub struct AddPlanEvent {
+        #[ink(topic)]
+        owner: AccountId,
+        durations: Vec<u64>,
+        prices: Vec<u128>,
+    }
+
+    #[ink(event)]
+    pub struct SubscribeEvent {
+        #[ink(topic)]
+        provider: AccountId,
+        #[ink(topic)]
+        plan_index: u128,
+        metadata: String,
+    }
+
     impl Subscrypt {
         #[ink(constructor)]
         pub fn new() -> Self {
@@ -234,6 +259,11 @@ pub mod subscrypt {
                 prices,
                 max_refund_permille_policies,
             );
+            self.env().emit_event(ProviderRegisterEvent {
+                address,
+                durations,
+                prices,
+            });
         }
 
         /// Add plans to `provider` storage
@@ -277,6 +307,12 @@ pub mod subscrypt {
                     disabled: false,
                 });
             }
+
+            self.env().emit_event(AddPlanEvent {
+                owner: caller,
+                durations,
+                prices,
+            });
         }
 
         /// Editing previously created plans of the `caller`
@@ -458,6 +494,12 @@ pub mod subscrypt {
                 (time + consts.duration - self.start_time) / 86400,
                 (self.env().transferred_balance() * consts.max_refund_permille_policy) / 1000,
             );
+
+            self.env().emit_event(SubscribeEvent {
+                provider: provider_address,
+                metadata,
+                plan_index,
+            });
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
@@ -626,6 +668,8 @@ pub mod subscrypt {
                 None => false
             }
         }
+
+
 
         /// `user` can use this function to retrieve her whole subscription history to
         /// different providers.
