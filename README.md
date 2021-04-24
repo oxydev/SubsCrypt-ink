@@ -1,5 +1,5 @@
 # SubsCrypt-ink!
-
+ 
 [![Rust](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml/badge.svg)](https://github.com/oxydev/SubsCrypt-ink/actions/workflows/rust.yml)
 
 This project is honored to be funded by Web3 Foundation grant program. You can find more info [here](https://github.com/w3f/Open-Grants-Program/blob/master/applications/SubsCrypt.md).
