@@ -528,7 +528,6 @@ pub mod subscrypt {
         /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
         #[ink(message)]
         pub fn withdraw(&mut self) -> u128 {
-            // TODO match & unwrap here
             assert!(
                 self.providers.contains_key(&self.env().caller()),
                 "You are not a registered provider"
@@ -754,6 +753,20 @@ pub mod subscrypt {
         ) -> Vec<SubscriptionRecord> {
             let caller: AccountId = self.env().caller();
             self.retrieve_data(caller, provider_address)
+        }
+
+
+        pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) ->  PlanConsts {
+            let number: usize = plan_index.try_into().unwrap();
+            match match self
+            .providers
+            .get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("index is not valid!")
+            }.plans.get(number) {
+                Some(x) => *x,
+                None => panic!("please select a valid plan")
+            }
         }
 
 
