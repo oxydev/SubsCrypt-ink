@@ -5,7 +5,9 @@ pub mod utils {
     use ink_env::AccountId as Account;
     use ink_env::{call, test};
     const DEFAULT_GAS_LIMIT: u128 = 1_000_000;
+    use ink_env::hash::{HashOutput, Sha2x256};
 
+    
     /// This function will set the `caller` and `callee` of transaction with endowment amount of
     /// `value`
     pub fn set_caller(callee: Account, from: Account, value: u128) {
@@ -32,12 +34,20 @@ pub mod utils {
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
     ) {
+
+        let t: String = "token".to_string();
+        let p: String = "pass_phrase".to_string();
+        let encodable = [t, p];
+        let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+        ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
+
         subscrypt.provider_register(
             durations.clone(),
             active_session_limits.clone(),
             prices.clone(),
             max_refund_permille_policies.clone(),
             account,
+            output,
         );
         for i in 0..durations.len() {
             assert_eq!(

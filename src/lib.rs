@@ -93,6 +93,7 @@ pub mod subscrypt {
         pub(crate) plans: Vec<PlanConsts>,
         pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
+        pub subs_crypt_pass_hash: [u8; 32],
     }
 
     /// This struct represents a user
@@ -234,6 +235,7 @@ pub mod subscrypt {
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
             address: AccountId,
+            subs_crypt_pass_hash: [u8; 32],
         ) {
             let caller = self.env().caller();
             assert!(
@@ -249,6 +251,7 @@ pub mod subscrypt {
                 plans: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
+                subs_crypt_pass_hash,
             };
             self.providers.insert(caller, provider);
 
@@ -773,6 +776,40 @@ pub mod subscrypt {
             }
         }
 
+        #[ink(message)]
+        pub fn provider_check_auth(
+            &self,
+            provider: AccountId,
+            token: String,
+            pass_phrase: String,
+        ) -> bool {
+            return match self.providers.get(&provider) {
+                Some(provider) => {
+                    let encodable = [token, pass_phrase];
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    return encoded == provider.subs_crypt_pass_hash
+                },
+                None => false
+            }
+        }
+        
+        #[ink(message)]
+        pub fn user_check_auth(
+            &self,
+            user: AccountId,
+            token: String,
+            pass_phrase: String,
+        ) -> bool {
+            return match self.users.get(&user) {
+                Some(user) => {
+                    let encodable = [token, pass_phrase];
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    return encoded == user.subs_crypt_pass_hash
+                },
+                None => false
+            }
+        }
+        
 
 
         /// `user` can use this function to retrieve her whole subscription history to
