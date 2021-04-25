@@ -193,6 +193,8 @@ pub mod subscrypt {
         provider: AccountId,
         #[ink(topic)]
         plan_index: u128,
+        subscription_time: u64,
+        duration: u64,
     }
 
     impl Subscrypt {
@@ -493,7 +495,104 @@ pub mod subscrypt {
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
                 plan_index: plan_index,
+                subscription_time: time,
+                duration: consts.duration,
             });
+        }
+
+        pub fn renew(&mut self,
+            provider_address: AccountId,
+            plan_index: u128,
+        ) {
+            let caller: AccountId = self.env().caller();
+
+            if !self
+                .plan_index_to_record_index
+                .contains_key(&(caller, provider_address, plan_index))
+            {
+                panic!("You should have been subscribed to this plan for renew!");
+            }
+
+            let last_index : u128 = match self
+            .plan_index_to_record_index
+            .get(&(caller, provider_address, plan_index)) {
+                Some(index) => *index,
+                None => panic!("index is not valid!")
+            };
+            let number: usize = last_index.try_into().unwrap();
+            let record = &self
+                .records
+                .get(&(caller, provider_address))
+                .unwrap()
+                .subscription_records[number];
+
+            if record.plan_index != plan_index
+                || record.refunded
+                || record.plan.duration + record.subscription_time < self.env().block_timestamp()
+            {
+                panic!("You should have been subscribed to this plan for renew!");
+            }
+
+            let provider = match self.providers.get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("Provider not existed in the contract!")
+            };
+            let start_time: u64 = record.plan.duration + record.subscription_time;
+
+            let index : usize = plan_index.try_into().unwrap();
+            let consts: PlanConsts = provider.plans[index];
+
+            assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
+            assert!(!consts.disabled, "Plan is currently disabled by provider");
+            let addr: &AccountId = &provider.money_address;
+            // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
+            assert_eq!(self.transfer(
+                    *addr,
+                    consts.price * (1000 - consts.max_refund_permille_policy) / 1000
+                ), Ok(())
+            );
+            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy;
+            assert_eq!(
+                self.transfer(
+                    provider.money_address,
+                    promised_amount
+                ),
+                Ok(())
+            );
+            let passed_time = record.plan.duration + record.subscription_time - self.start_time;
+
+            let subscription_record = SubscriptionRecord {
+                provider: provider_address,
+                plan: consts,
+                plan_index,
+                subscription_time: start_time,
+                meta_data_encrypted: record.meta_data_encrypted.clone(),
+                refunded: false,
+            };
+            
+            self.remove_entry(provider_address, passed_time / 86400, promised_amount / 1000);
+
+            let plan_record = self.records.get_mut(&(caller, provider_address)).unwrap();
+
+            self.plan_index_to_record_index.insert(
+                (caller, provider_address, plan_index),
+                plan_record.subscription_records.len().try_into().unwrap(),
+            );
+
+            plan_record.subscription_records.push(subscription_record);
+            
+            self.add_entry(
+                provider_address,
+                (start_time + consts.duration - self.start_time) / 86400,
+                (self.env().transferred_balance() * consts.max_refund_permille_policy) / 1000,
+            );
+            self.env().emit_event(SubscribeEvent {
+                provider: provider_address,
+                plan_index: plan_index,
+                subscription_time: start_time,
+                duration: consts.duration,
+            });
+   
         }
 
         /// Setting the `subs_crypt_pass_hash` of caller to `pass`
@@ -509,6 +608,18 @@ pub mod subscrypt {
         pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
             match self.users.get_mut(&self.env().caller()) {
                 Some(x) => x.subs_crypt_pass_hash = pass,
+                None => panic!("User doesn't exist!")
+            };
+        }
+
+        /// Setting the `subs_crypt_pass_hash_for_each_provider` of caller to `pass`
+        ///
+        /// # Panics
+        /// If `caller` does not exist in `providers`
+        #[ink(message)]
+        pub fn subs_crypt_pass_hash_for_each_provider(&mut self, provider_address: AccountId, pass: [u8; 32]) {
+            match  self.records.get_mut(&(self.env().caller(), provider_address)) {
+                Some(x) => x.pass_hash = pass,
                 None => panic!("User doesn't exist!")
             };
         }
