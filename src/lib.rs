@@ -755,7 +755,7 @@ pub mod subscrypt {
             self.retrieve_data(caller, provider_address)
         }
 
-
+        #[ink(message)]
         pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) ->  PlanConsts {
             let number: usize = plan_index.try_into().unwrap();
             match match self
