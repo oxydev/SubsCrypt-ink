@@ -33,11 +33,10 @@ pub mod utils {
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
+        u: String,
     ) {
-
-        let t: String = "token".to_string();
         let p: String = "pass_phrase".to_string();
-        let encodable = [t, p];
+        let encodable = [p];
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
@@ -47,6 +46,7 @@ pub mod utils {
             prices.clone(),
             max_refund_permille_policies.clone(),
             account,
+            u,
             output,
         );
         for i in 0..durations.len() {
