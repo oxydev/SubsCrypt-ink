@@ -166,6 +166,10 @@ pub mod subscrypt {
         pub records: HashMap<(AccountId, AccountId), PlanRecord>,
         // (user AccountId, provider AccountId, plan_index) -> index
         plan_index_to_record_index: HashMap<(AccountId, AccountId, u128), u128>,
+        // username -> user AccountId
+        username_to_address: HashMap<String, AccountId>,
+        // username -> user AccountId
+        address_to_username: HashMap<AccountId, String>,
     }
 
     impl Default for Subscrypt {
@@ -214,6 +218,8 @@ pub mod subscrypt {
                 daily_locked_amounts: ink_storage::collections::HashMap::new(),
                 records: ink_storage::collections::HashMap::new(),
                 plan_index_to_record_index: ink_storage::collections::HashMap::new(),
+                username_to_address: ink_storage::collections::HashMap::new(),
+                address_to_username: ink_storage::collections::HashMap::new(),                
             }
         }
 
@@ -235,9 +241,25 @@ pub mod subscrypt {
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
             address: AccountId,
+            username: String,
             subs_crypt_pass_hash: [u8; 32],
         ) {
+
             let caller = self.env().caller();
+
+            match self.address_to_username.get(&caller) {
+                Some(_) => {}
+                None => {
+                    match self.username_to_address.get(&username) {
+                        Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
+                        None => {}
+                    }
+                    self.address_to_username.insert(caller, username.clone());
+                    self.username_to_address.insert(username, caller);
+                }
+            }
+
+
             assert!(
                 self.env().transferred_balance() >= self.provider_register_fee,
                 "You have to pay a minimum amount to register in the contract!"
@@ -254,7 +276,6 @@ pub mod subscrypt {
                 subs_crypt_pass_hash,
             };
             self.providers.insert(caller, provider);
-
             self.add_plan(
                 durations,
                 active_session_limits,
@@ -415,6 +436,7 @@ pub mod subscrypt {
             provider_address: AccountId,
             plan_index: u128,
             pass: [u8; 32],
+            username: String,
             metadata: String,
         ) {
             let caller: AccountId = self.env().caller();
@@ -441,7 +463,20 @@ pub mod subscrypt {
 
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-                 
+            
+
+            match self.address_to_username.get(&caller) {
+                Some(_) => {}
+                None => {
+                    match self.username_to_address.get(&username) {
+                        Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
+                        None => {}
+                    }
+                    self.address_to_username.insert(caller, username.clone());
+                    self.username_to_address.insert(username, caller);
+                }
+            }
+
             let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
             assert_eq!(self.transfer(
@@ -460,6 +495,7 @@ pub mod subscrypt {
                 );
             }
 
+            
             let subscription_record = SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
@@ -763,12 +799,11 @@ pub mod subscrypt {
             &self,
             user: AccountId,
             provider: AccountId,
-            token: String,
             pass_phrase: String,
         ) -> bool {
             return match self.records.get(&(user, provider)) {
                 Some(record) => {
-                    let encodable = [token, pass_phrase];
+                    let encodable = [pass_phrase];
                     let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
                     return encoded == record.pass_hash
                 },
@@ -776,38 +811,86 @@ pub mod subscrypt {
             }
         }
 
+        /// This function indicate if `username` can authenticate with given `pass_phrase`
+        /// # Note
+        /// `user` are encouraged to have different `token` and `pass_phrase` for each provider
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
+        #[ink(message)]
+        pub fn check_auth_with_username(
+            &self,
+            username: String,
+            provider: AccountId,
+            pass_phrase: String,
+        ) -> bool {
+            let user = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            self.check_auth(user, provider, pass_phrase)
+        }
+
         #[ink(message)]
         pub fn provider_check_auth(
             &self,
             provider: AccountId,
-            token: String,
             pass_phrase: String,
         ) -> bool {
             return match self.providers.get(&provider) {
                 Some(provider) => {
-                    let encodable = [token, pass_phrase];
+                    let encodable = [pass_phrase];
                     let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
                     return encoded == provider.subs_crypt_pass_hash
                 },
                 None => false
             }
         }
+
+        #[ink(message)]
+        pub fn provider_check_auth_with_username(
+            &self,
+            username: String,
+            pass_phrase: String,
+        ) -> bool {
+            let address = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            self.provider_check_auth(address, pass_phrase)
+        }
+
         
         #[ink(message)]
         pub fn user_check_auth(
             &self,
             user: AccountId,
-            token: String,
             pass_phrase: String,
         ) -> bool {
             return match self.users.get(&user) {
                 Some(user) => {
-                    let encodable = [token, pass_phrase];
+                    let encodable = [pass_phrase];
                     let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
                     return encoded == user.subs_crypt_pass_hash
                 },
                 None => false
             }
+        }
+
+        #[ink(message)]
+        pub fn user_check_auth_with_username(
+            &self,
+            username: String,
+            pass_phrase: String,
+        ) -> bool {
+            let address = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            self.user_check_auth(address, pass_phrase)
         }
         
 
@@ -824,13 +907,16 @@ pub mod subscrypt {
         /// # Example
         /// Examples in `retrieve_whole_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
-        pub fn retrieve_whole_data_with_password(
+        pub fn retrieve_whole_data_with_username(
             &self,
-            user: AccountId,
-            token: String,
+            username: String,
             phrase: String,
         ) -> Vec<SubscriptionRecord> {
-            let encodable = [token, phrase];
+            let user = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            let encodable = [phrase];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(
                 encoded,
@@ -866,14 +952,17 @@ pub mod subscrypt {
         /// # Example
         /// Examples in `retrieve_data_with_password_works` in `tests/test.rs`
         #[ink(message)]
-        pub fn retrieve_data_with_password(
+        pub fn retrieve_data_with_username(
             &self,
-            user: AccountId,
+            username: String,
             provider_address: AccountId,
-            token: String,
             phrase: String,
         ) -> Vec<SubscriptionRecord> {
-            let encodable = [token, phrase];
+            let user = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            let encodable = [phrase];
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
             assert_eq!(
                 encoded,
@@ -959,6 +1048,20 @@ pub mod subscrypt {
                 return false;
             }
             true
+        }
+
+        #[ink(message)]
+        pub fn check_subscription_with_username(
+            &self,
+            username: String,
+            provider_address: AccountId,
+            plan_index: u128,
+        ) -> bool {
+            let user = match self.username_to_address.get(&username) {
+                Some(name) => *name,
+                None => panic!("this username is invalid!")
+            };
+            self.check_subscription(user, provider_address, plan_index)
         }
 
         fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
