@@ -33,7 +33,7 @@ pub mod utils {
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
-        u: String,
+        username: String,
     ) {
         let p: String = "pass_phrase".to_string();
         let encodable = [p];
@@ -46,7 +46,7 @@ pub mod utils {
             prices.clone(),
             max_refund_permille_policies.clone(),
             account,
-            u,
+            username,
             output,
         );
         for i in 0..durations.len() {
