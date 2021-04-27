@@ -651,7 +651,7 @@ pub mod subscrypt {
         /// # Panics
         /// If `caller` does not exist in `providers`
         #[ink(message)]
-        pub fn subscrypt_pass_hash_for_each_provider(
+        pub fn set_pass_hash_of_user_for_each_provider(
             &mut self,
             provider_address: AccountId,
             pass: [u8; 32],
