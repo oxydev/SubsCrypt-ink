@@ -528,6 +528,7 @@ pub mod subscrypt {
             });
         }
 
+        #[ink(message, payable)]
         pub fn renew(&mut self, provider_address: AccountId, plan_index: u128) {
             let caller: AccountId = self.env().caller();
 
@@ -561,10 +562,6 @@ pub mod subscrypt {
                 panic!("You should have been subscribed to this plan for renew!");
             }
 
-            let provider = match self.providers.get(&provider_address) {
-                Some(provider) => provider,
-                None => panic!("Provider not existed in the contract!"),
-            };
             let start_time: u64 = record.plan.duration + record.subscription_time;
 
             let index: usize = plan_index.try_into().unwrap();
@@ -585,7 +582,7 @@ pub mod subscrypt {
                 ),
                 Ok(())
             );
-            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy;
+            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy / 1000;
             assert_eq!(
                 self.transfer(provider.money_address, promised_amount),
                 Ok(())
