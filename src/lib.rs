@@ -360,34 +360,6 @@ pub mod subscrypt {
             plan.disabled = disabled;
         }
 
-        /// Disabling previously created plans of the `caller`
-        ///
-        /// # Note
-        ///
-        /// This will not effect the users that subscribed prior to the edition of plan
-        ///
-        /// # Panics
-        ///
-        /// If `plan_index` is bigger than the length of `plans` of `provider`
-        ///
-        /// # Examples
-        /// Examples in `change_disable_works` in `tests/test.rs`
-        #[ink(message)]
-        pub fn change_disable(&mut self, plan_index: u128) {
-            let caller = self.env().caller();
-            let number: usize = plan_index.try_into().unwrap();
-            match self.providers.get_mut(&caller) {
-                Some(provider) => {
-                    assert!(
-                        provider.plans.len() > plan_index.try_into().unwrap(),
-                        "please select a valid plan"
-                    );
-                    provider.plans[number].disabled = !provider.plans[number].disabled
-                }
-                None => panic!("You should first register in the contract!"),
-            }
-        }
-
         /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
         ///
         /// In this function, we will lock (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000

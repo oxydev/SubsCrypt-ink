@@ -262,7 +262,7 @@ pub mod tests {
             "alice".to_string(),
         );
 
-        subscrypt.change_disable(1);
+        subscrypt.edit_plan(1,60 * 60 * 24 * 30,2,50000,100,true);
         assert_eq!(
             subscrypt
                 .providers
@@ -275,7 +275,7 @@ pub mod tests {
             true
         );
 
-        subscrypt.change_disable(1);
+        subscrypt.edit_plan(1,60 * 60 * 24 * 30,2,50000,100,false);
         assert_eq!(
             subscrypt
                 .providers
