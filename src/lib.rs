@@ -561,7 +561,10 @@ pub mod subscrypt {
             {
                 panic!("You should have been subscribed to this plan for renew!");
             }
-
+            let provider = match self.providers.get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("Provider not existed in the contract!"),
+            };
             let start_time: u64 = record.plan.duration + record.subscription_time;
 
             let index: usize = plan_index.try_into().unwrap();
