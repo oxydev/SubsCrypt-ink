@@ -17,7 +17,7 @@
 #[ink_lang::contract]
 pub mod subscrypt {
     use core::convert::TryInto;
-    use ink_env::hash::Sha2x256;
+    use ink_env::hash::{HashOutput,Sha2x256};
     use ink_env::Error;
     use ink_prelude::string::String;
     use ink_prelude::vec;
@@ -999,6 +999,12 @@ pub mod subscrypt {
             }
         }
 
+        #[ink(message)]
+        pub fn get_sha2(&self, string: String) -> [u8; 32] {
+            let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+            ink_env::hash_encoded::<Sha2x256, _>(&string, &mut output);
+            return output;
+        }
         /// This function can be called to check if `user` has a valid subscription to the
         /// specific `plan_index` of `provider`.
         ///
