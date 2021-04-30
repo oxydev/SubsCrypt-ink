@@ -57,10 +57,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
 
@@ -80,10 +80,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
 
@@ -103,10 +103,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
     /// Simple scenario that `alice` edit a plan as a provider
@@ -126,17 +126,16 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_edit_plan_routine(
             &mut subscrypt,
             accounts.alice,
             1,
             60 * 60 * 24 * 10,
-            3,
             100000,
             500,
             false,
@@ -159,17 +158,16 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_edit_plan_routine(
             &mut subscrypt,
             accounts.alice,
             2,
             60 * 60 * 24 * 10,
-            3,
             100000,
             500,
             false,
@@ -192,18 +190,18 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_add_plan_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24 * 10],
-            vec![3],
             vec![100000],
             vec![500],
+            vec![vec!["key".to_string()]],
         )
     }
     /// Simple scenario that `alice` tries to add a plan as a provider
@@ -223,18 +221,18 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_add_plan_routine(
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24 * 10],
-            vec![3, 2],
-            vec![100000],
+            vec![100000, 100000],
             vec![500],
+            vec![vec!["key".to_string()]],
         );
     }
 
@@ -256,10 +254,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         subscrypt.change_disable(1);
@@ -309,10 +307,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -322,7 +320,13 @@ pub mod tests {
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
-        subscrypt.subscribe(accounts.alice, 1, output,"bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            output,
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
@@ -333,18 +337,20 @@ pub mod tests {
                 .unwrap(),
             &accounts.alice
         );
-        subscrypt.retrieve_whole_data_with_username("bob".to_string(), "pass_phrase".parse().unwrap());
+        subscrypt
+            .retrieve_whole_data_with_username("bob".to_string(), "pass_phrase".parse().unwrap());
 
         let p: String = "new_pass_phrase".to_string();
         let encodable = [p];
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
-        subscrypt.set_subscrypt_pass(output);
-        subscrypt.retrieve_whole_data_with_username("bob".to_string(), "new_pass_phrase".parse().unwrap());
-
+        subscrypt.set_user_subscrypt_pass(output);
+        subscrypt.retrieve_whole_data_with_username(
+            "bob".to_string(),
+            "new_pass_phrase".parse().unwrap(),
+        );
     }
-
 
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
     /// `alice` has two plans. One is daily and other is monthly.
@@ -365,15 +371,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
@@ -406,14 +418,20 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         set_caller(callee, accounts.bob, 49500);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
@@ -448,14 +466,20 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
-        subscrypt.subscribe(accounts.alice, 1, [0; 32],"bob".to_string(),  "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
@@ -492,14 +516,20 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
@@ -537,15 +567,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["value".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -558,7 +594,7 @@ pub mod tests {
             false
         );
         set_caller(callee, accounts.bob, 50000);
-        subscrypt.renew(accounts.alice, 1);
+        subscrypt.renew(accounts.alice, 1, vec!["value".to_string()]);
         assert_eq!(
             subscrypt
                 .records
@@ -566,7 +602,8 @@ pub mod tests {
                 .unwrap()
                 .subscription_records
                 .get(1)
-                .unwrap().provider,
+                .unwrap()
+                .provider,
             accounts.alice
         );
         assert_eq!(
@@ -609,15 +646,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -680,14 +723,20 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -724,15 +773,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -775,10 +830,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -787,7 +842,13 @@ pub mod tests {
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
-        subscrypt.subscribe(accounts.alice, 1, output, "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            output,
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -823,15 +884,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -863,15 +930,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32],"bob".to_string(),  "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -903,10 +976,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -916,7 +989,13 @@ pub mod tests {
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
-        subscrypt.subscribe(accounts.alice, 1, output, "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            output,
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -928,10 +1007,8 @@ pub mod tests {
                 .refunded,
             false
         );
-        let s = subscrypt.retrieve_whole_data_with_username(
-            "bob".to_string(),
-            "pass_phrase".parse().unwrap(),
-        );
+        let s = subscrypt
+            .retrieve_whole_data_with_username("bob".to_string(), "pass_phrase".parse().unwrap());
         assert_eq!(s[0].provider, accounts.alice);
         assert_eq!(s[0].plan_index, 1);
         assert_eq!(s[0].plan.duration, 60 * 60 * 24 * 30);
@@ -959,10 +1036,10 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -972,7 +1049,13 @@ pub mod tests {
         let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
         ink_env::hash_encoded::<Sha2x256, _>(&encodable, &mut output);
 
-        subscrypt.subscribe(accounts.alice, 1, output, "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            output,
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -984,11 +1067,7 @@ pub mod tests {
                 .refunded,
             false
         );
-        let s = subscrypt.check_auth(
-            accounts.bob,
-            accounts.alice,
-            "pass_phras".parse().unwrap(),
-        );
+        let s = subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phras".parse().unwrap());
         assert_eq!(s, false);
 
         // No record for user charlie & provider alice
@@ -999,11 +1078,7 @@ pub mod tests {
         );
         assert_eq!(s, false);
 
-        let s = subscrypt.check_auth(
-            accounts.bob,
-            accounts.alice,
-            "pass_phrase".parse().unwrap(),
-        );
+        let s = subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phrase".parse().unwrap());
         assert_eq!(s, true);
     }
 
@@ -1028,23 +1103,58 @@ pub mod tests {
                 60 * 60 * 24 * 300,
                 60 * 60 * 24 * 31,
             ],
-            vec![2, 2, 2, 2],
             vec![10000, 50000, 10000, 10000],
             vec![50, 100, 200, 100],
             "alice".to_string(),
+            vec![
+                vec!["key".to_string()],
+                vec!["key".to_string()],
+                vec!["key".to_string()],
+                vec!["key".to_string()],
+            ],
         );
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         set_caller(callee, accounts.bob, 10000);
 
-        subscrypt.subscribe(accounts.alice, 0, [0; 32],"bob".to_string(),  "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            0,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
 
-        subscrypt.subscribe(accounts.alice, 2, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            2,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
         set_caller(callee, accounts.eve, 10000);
 
-        subscrypt.subscribe(accounts.alice, 0, [0; 32], "eve".to_string(), "nothing important".to_string());
-        subscrypt.subscribe(accounts.alice, 3, [0; 32],"eve".to_string(),  "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            0,
+            [0; 32],
+            "eve".to_string(),
+            vec!["nothing important".to_string()],
+        );
+        subscrypt.subscribe(
+            accounts.alice,
+            3,
+            [0; 32],
+            "eve".to_string(),
+            vec!["nothing important".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .users
