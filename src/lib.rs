@@ -637,7 +637,7 @@ pub mod subscrypt {
             assert!(!consts.disabled, "Plan is currently disabled by provider");
 
             let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
-            assert_eq!(new_charastristics_values.len() + record.charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            assert_eq!(new_charastristics_values.len(), plan_charastristics.len(), "invalid charastristic values!");
             
             let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
@@ -656,18 +656,12 @@ pub mod subscrypt {
             );
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
             
-            let charastristics_values: &mut Vec<String> =&mut record.charastristics_values_encrypted.clone();
-
-            for i in 0..new_charastristics_values.len() {
-                charastristics_values.push(new_charastristics_values[i].clone());
-            }
-
             let subscription_record = SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
                 plan_index,
                 subscription_time: start_time,
-                charastristics_values_encrypted: record.charastristics_values_encrypted.clone(),
+                charastristics_values_encrypted: new_charastristics_values.clone(),
                 refunded: false,
             };
             
