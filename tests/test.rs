@@ -567,15 +567,21 @@ pub mod tests {
             &mut subscrypt,
             accounts.alice,
             vec![60 * 60 * 24, 60 * 60 * 24 * 30],
-            vec![2, 2],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
 
-        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["value".to_string()],
+        );
         assert_eq!(
             subscrypt
                 .records
@@ -588,7 +594,7 @@ pub mod tests {
             false
         );
         set_caller(callee, accounts.bob, 50000);
-        subscrypt.renew(accounts.alice, 1);
+        subscrypt.renew(accounts.alice, 1, vec!["value".to_string()]);
         assert_eq!(
             subscrypt
                 .records
@@ -596,7 +602,8 @@ pub mod tests {
                 .unwrap()
                 .subscription_records
                 .get(1)
-                .unwrap().provider,
+                .unwrap()
+                .provider,
             accounts.alice
         );
         assert_eq!(

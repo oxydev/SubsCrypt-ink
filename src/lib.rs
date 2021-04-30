@@ -221,7 +221,7 @@ pub mod subscrypt {
             max_refund_permille_policies: Vec<u128>,
             address: AccountId,
             username: String,
-            subs_crypt_pass_hash: [u8; 32],
+            subscrypt_pass_hash: [u8; 32],
             plans_characteristics: Vec<Vec<String>>,
         ) {
             assert_eq!(prices.len(), durations.len(), "Wrong Number of Args");
@@ -514,7 +514,7 @@ pub mod subscrypt {
                 ),
                 Ok(())
             );
-          
+
             if address_has_not_username {
                 self.address_to_username.insert(caller, username.clone());
                 self.username_to_address.insert(username, caller);
@@ -631,7 +631,7 @@ pub mod subscrypt {
 
             let plan_characteristics: Vec<String> = provider.plans_characteristics[index].clone();
             assert_eq!(
-                new_characteristics_values.len() + record.characteristics_values_encrypted.len(),
+                new_characteristics_values.len(),
                 plan_characteristics.len(),
                 "invalid characteristic values!"
             );
@@ -701,7 +701,7 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn set_user_subscrypt_pass(&mut self, pass: [u8; 32]) {
             match self.users.get_mut(&self.env().caller()) {
-                Some(x) => x.subs_crypt_pass_hash = pass,
+                Some(x) => x.subscrypt_pass_hash = pass,
                 None => panic!("User doesn't exist!"),
             };
         }
@@ -728,9 +728,8 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn set_provider_subscrypt_pass(&mut self, pass: [u8; 32]) {
             match self.providers.get_mut(&self.env().caller()) {
-                Some(x) => x.subs_crypt_pass_hash = pass,
+                Some(x) => x.subscrypt_pass_hash = pass,
                 None => panic!("User doesn't exist!"),
-
             };
         }
 
@@ -914,7 +913,7 @@ pub mod subscrypt {
             return match self.providers.get(&provider) {
                 Some(provider) => {
                     let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
-                    return encoded == provider.subs_crypt_pass_hash;
+                    return encoded == provider.subscrypt_pass_hash;
                 }
                 None => false,
             };
@@ -938,7 +937,7 @@ pub mod subscrypt {
             return match self.users.get(&user) {
                 Some(user) => {
                     let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
-                    return encoded == user.subs_crypt_pass_hash;
+                    return encoded == user.subscrypt_pass_hash;
                 }
                 None => false,
             };
@@ -952,7 +951,7 @@ pub mod subscrypt {
             };
             self.user_check_auth(address, pass_phrase)
         }
-      
+
         #[ink(message)]
         pub fn is_username_available(&self, username: String) -> bool {
             !self.username_to_address.contains_key(&username)
@@ -1074,7 +1073,7 @@ pub mod subscrypt {
                 None => panic!("please select a valid plan"),
             }
         }
-      
+
         #[ink(message)]
         pub fn get_plan_characteristics(
             &self,
