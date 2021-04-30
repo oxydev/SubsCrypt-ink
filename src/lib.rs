@@ -74,7 +74,6 @@ pub mod subscrypt {
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct PlanConsts {
         pub duration: u64,
-        pub(crate) active_session_limit: u128,
         pub(crate) price: u128,
         pub(crate) max_refund_permille_policy: u128,
         pub disabled: bool,
@@ -238,7 +237,6 @@ pub mod subscrypt {
         pub fn provider_register(
             &mut self,
             durations: Vec<u64>,
-            active_session_limits: Vec<u128>,
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
             address: AccountId,
@@ -247,15 +245,14 @@ pub mod subscrypt {
             plans_charastristics: Vec<Vec<String>>,
         ) {
 
-            assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
-            assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(prices.len(), durations.len(),"Wrong Number of Args");
             assert_eq!(
                 max_refund_permille_policies.len(),
-                active_session_limits.len(),
+                durations.len(),
                 "Wrong Number of Args"
             );
             assert_eq!(
-                max_refund_permille_policies.len(),
+                durations.len(),
                 plans_charastristics.len(),
                 "Wrong Number of Args"
             );
@@ -295,7 +292,6 @@ pub mod subscrypt {
             self.providers.insert(caller, provider);
             self.add_plan(
                 durations,
-                active_session_limits,
                 prices,
                 max_refund_permille_policies,
                 plans_charastristics,
@@ -318,20 +314,18 @@ pub mod subscrypt {
         pub fn add_plan(
             &mut self,
             durations: Vec<u64>,
-            active_session_limits: Vec<u128>,
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
             plan_charastristics: Vec<Vec<String>>,
         ) {
-            assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
-            assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(prices.len(), durations.len(),"Wrong Number of Args");
             assert_eq!(
                 max_refund_permille_policies.len(),
-                active_session_limits.len(),
+                durations.len(),
                 "Wrong Number of Args"
             );
             assert_eq!(
-                max_refund_permille_policies.len(),
+                durations.len(),
                 plan_charastristics.len(),
                 "Wrong Number of Args"
             );
@@ -345,7 +339,6 @@ pub mod subscrypt {
             for i in 0..durations.len() {
                 provider.plans.push(PlanConsts {
                     duration: durations[i],
-                    active_session_limit: active_session_limits[i],
                     price: prices[i],
                     max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
@@ -378,7 +371,6 @@ pub mod subscrypt {
             &mut self,
             plan_index: u128,
             duration: u64,
-            active_session_limit: u128,
             price: u128,
             max_refund_permille_policies: u128,
             disabled: bool,
@@ -397,7 +389,6 @@ pub mod subscrypt {
             };
 
             plan.duration = duration;
-            plan.active_session_limit = active_session_limit;
             plan.price = price;
             plan.max_refund_permille_policy = max_refund_permille_policies;
             plan.disabled = disabled;

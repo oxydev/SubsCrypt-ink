@@ -30,7 +30,6 @@ pub mod utils {
         subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
-        active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
         username: String,
@@ -43,7 +42,6 @@ pub mod utils {
 
         subscrypt.provider_register(
             durations.clone(),
-            active_session_limits.clone(),
             prices.clone(),
             max_refund_permille_policies.clone(),
             account,
@@ -62,17 +60,6 @@ pub mod utils {
                     .unwrap()
                     .duration,
                 durations[i]
-            );
-            assert_eq!(
-                subscrypt
-                    .providers
-                    .get(&account)
-                    .unwrap()
-                    .plans
-                    .get(i)
-                    .unwrap()
-                    .active_session_limit,
-                active_session_limits[i]
             );
             assert_eq!(
                 subscrypt
@@ -108,23 +95,11 @@ pub mod utils {
         account: Account,
         plan_index: u128,
         duration: u64,
-        active: u128,
         price: u128,
         max_refund: u128,
         disabled: bool,
     ) {
-        subscrypt.edit_plan(plan_index, duration, active, price, max_refund, disabled);
-        assert_eq!(
-            subscrypt
-                .providers
-                .get(&account)
-                .unwrap()
-                .plans
-                .get(1)
-                .unwrap()
-                .active_session_limit,
-            active
-        );
+        subscrypt.edit_plan(plan_index, duration, price, max_refund, disabled);
         assert_eq!(
             subscrypt
                 .providers
@@ -168,28 +143,15 @@ pub mod utils {
         subscrypt: &mut Subscrypt,
         account: Account,
         durations: Vec<u64>,
-        active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
         plan_charastristics: Vec<Vec<String>>,
     ) {
         subscrypt.add_plan(
             durations.clone(),
-            active_session_limits.clone(),
             prices.clone(),
             max_refund_permille_policies.clone(),
             plan_charastristics,
-        );
-        assert_eq!(
-            subscrypt
-                .providers
-                .get(&account)
-                .unwrap()
-                .plans
-                .get(2)
-                .unwrap()
-                .active_session_limit,
-            active_session_limits[0]
         );
         assert_eq!(
             subscrypt
