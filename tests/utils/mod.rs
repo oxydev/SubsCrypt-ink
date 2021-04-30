@@ -7,7 +7,6 @@ pub mod utils {
     const DEFAULT_GAS_LIMIT: u128 = 1_000_000;
     use ink_env::hash::{HashOutput, Sha2x256};
 
-    
     /// This function will set the `caller` and `callee` of transaction with endowment amount of
     /// `value`
     pub fn set_caller(callee: Account, from: Account, value: u128) {
