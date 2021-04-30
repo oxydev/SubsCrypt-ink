@@ -79,18 +79,18 @@ pub mod subscrypt {
         pub(crate) plans_characteristics: Vec<Vec<String>>,
         pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
-        pub subs_crypt_pass_hash: [u8; 32],
+        pub subscrypt_pass_hash: [u8; 32],
     }
 
     /// This struct represents a user
     /// # fields:
     /// * list_of_providers : list of providers that the user subscribed to
-    /// * subs_crypt_pass_hash : pass hash for retrieve data in subscrypt user dashboard
+    /// * subscrypt_pass_hash : pass hash for retrieve data in subscrypt user dashboard
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct User {
         pub list_of_providers: Vec<AccountId>,
-        pub subs_crypt_pass_hash: [u8; 32],
+        pub subscrypt_pass_hash: [u8; 32],
     }
 
     /// Struct for handling payments of refund
@@ -235,18 +235,13 @@ pub mod subscrypt {
                 plans_characteristics.len(),
                 "Wrong Number of Args"
             );
-
             let caller = self.env().caller();
-
             match self.address_to_username.get(&caller) {
                 Some(_) => {}
                 None => {
-                    match self.username_to_address.get(&username) {
-                        Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
-                        None => {}
+                    if let Some(address) = self.username_to_address.get(&username) {
+                        assert_eq!(*address, caller, "this username is invalid!")
                     }
-                    self.address_to_username.insert(caller, username.clone());
-                    self.username_to_address.insert(username, caller);
                 }
             }
 
@@ -258,13 +253,15 @@ pub mod subscrypt {
                 !self.providers.contains_key(&caller),
                 "You can not register again in the contract!"
             );
+            self.address_to_username.insert(caller, username.clone());
+            self.username_to_address.insert(username, caller);
 
             let provider = Provider {
                 plans: Vec::new(),
                 plans_characteristics: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
-                subs_crypt_pass_hash,
+                subscrypt_pass_hash,
             };
 
             self.providers.insert(caller, provider);
@@ -431,7 +428,7 @@ pub mod subscrypt {
         ///
         /// # Note
         ///
-        /// The `subs_crypt_pass_hash` will only be set if it's the first subscription of the `caller` to the `SubsCrypt` platform
+        /// The `subscrypt_pass_hash` will only be set if it's the first subscription of the `caller` to the `SubsCrypt` platform
         /// `caller` can not subscribe to same `plan_index` of the same `provider_address` but
         /// it can subscribe to different `plan_index` of same `provider_address` .
         /// This line of code checks that if you previously subscribed to `provider_address` and if it's the first time
@@ -491,7 +488,6 @@ pub mod subscrypt {
                 "You have to pay exact plan price"
             );
             assert!(!consts.disabled, "Plan is currently disabled by provider");
-
             let plan_characteristics: Vec<String> = provider.plans_characteristics[index].clone();
 
             assert_eq!(
@@ -518,7 +514,7 @@ pub mod subscrypt {
                 ),
                 Ok(())
             );
-
+          
             if address_has_not_username {
                 self.address_to_username.insert(caller, username.clone());
                 self.username_to_address.insert(username, caller);
@@ -529,7 +525,7 @@ pub mod subscrypt {
                     caller,
                     User {
                         list_of_providers: Vec::new(),
-                        subs_crypt_pass_hash: pass,
+                        subscrypt_pass_hash: pass,
                     },
                 );
             }
@@ -580,7 +576,6 @@ pub mod subscrypt {
                 duration: consts.duration,
             });
         }
-
         pub fn renew(
             &mut self,
             provider_address: AccountId,
@@ -618,7 +613,6 @@ pub mod subscrypt {
             {
                 panic!("You should have been subscribed to this plan for renew!");
             }
-
             let provider = match self.providers.get(&provider_address) {
                 Some(provider) => provider,
                 None => panic!("Provider not existed in the contract!"),
@@ -651,7 +645,7 @@ pub mod subscrypt {
                 ),
                 Ok(())
             );
-            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy;
+            let promised_amount = record.plan.price * record.plan.max_refund_permille_policy / 1000;
             assert_eq!(
                 self.transfer(provider.money_address, promised_amount),
                 Ok(())
@@ -695,11 +689,11 @@ pub mod subscrypt {
             });
         }
 
-        /// Setting the `subs_crypt_pass_hash` of caller to `pass`
+        /// Setting the `subscrypt_pass_hash` of caller to `pass`
         ///
         /// # Note
         ///
-        /// The `subs_crypt_pass_hash` will also be set in `subscribe` function in first subscription
+        /// The `subscrypt_pass_hash` will also be set in `subscribe` function in first subscription
         ///
         ///
         /// # Panics
@@ -712,7 +706,7 @@ pub mod subscrypt {
             };
         }
 
-        /// Setting the `subs_crypt_pass_hash_for_each_provider` of caller to `pass`
+        /// Setting the `subscrypt_pass_hash_for_each_provider` of caller to `pass`
         ///
         /// # Panics
         /// If `caller` does not exist in `providers`
@@ -736,6 +730,7 @@ pub mod subscrypt {
             match self.providers.get_mut(&self.env().caller()) {
                 Some(x) => x.subs_crypt_pass_hash = pass,
                 None => panic!("User doesn't exist!"),
+
             };
         }
 
@@ -957,7 +952,7 @@ pub mod subscrypt {
             };
             self.user_check_auth(address, pass_phrase)
         }
-
+      
         #[ink(message)]
         pub fn is_username_available(&self, username: String) -> bool {
             !self.username_to_address.contains_key(&username)
@@ -994,7 +989,7 @@ pub mod subscrypt {
             let encoded = self.env().hash_encoded::<Sha2x256, _>(&phrase);
             assert_eq!(
                 encoded,
-                self.users.get(&user).unwrap().subs_crypt_pass_hash,
+                self.users.get(&user).unwrap().subscrypt_pass_hash,
                 "Wrong auth"
             );
             self.retrieve_whole_data(user)
@@ -1079,7 +1074,7 @@ pub mod subscrypt {
                 None => panic!("please select a valid plan"),
             }
         }
-
+      
         #[ink(message)]
         pub fn get_plan_characteristics(
             &self,

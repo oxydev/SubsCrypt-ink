@@ -544,6 +544,78 @@ pub mod tests {
         set_caller(callee, accounts.eve, 0);
         subscrypt.withdraw();
     }
+
+    /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
+    /// and then `bob` tries to renew;
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 50000 for her second plan price
+    #[ink::test]
+    fn renew_works() {
+        let mut subscrypt = Subscrypt::new();
+
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+        set_account_balance(accounts.alice, 100);
+        set_account_balance(accounts.bob, 100000);
+        set_account_balance(callee, 100100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![2, 2],
+            vec![10000, 50000],
+            vec![50, 100],
+            "alice".to_string(),
+        );
+
+        set_caller(callee, accounts.bob, 50000);
+
+        subscrypt.subscribe(accounts.alice, 1, [0; 32], "bob".to_string(), "nothing important".to_string());
+        assert_eq!(
+            subscrypt
+                .records
+                .get(&(accounts.bob, accounts.alice))
+                .unwrap()
+                .subscription_records
+                .get(0)
+                .unwrap()
+                .refunded,
+            false
+        );
+        set_caller(callee, accounts.bob, 50000);
+        subscrypt.renew(accounts.alice, 1);
+        assert_eq!(
+            subscrypt
+                .records
+                .get(&(accounts.bob, accounts.alice))
+                .unwrap()
+                .subscription_records
+                .get(1)
+                .unwrap().provider,
+            accounts.alice
+        );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(accounts.alice)
+                .expect("Cannot set account balance"),
+            95100
+        );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(accounts.bob)
+                .expect("Cannot set account balance"),
+            100000
+        );
+        assert_eq!(
+            ink_env::test::get_account_balance::<ink_env::DefaultEnvironment>(callee)
+                .expect("Cannot set account balance"),
+            5100
+        );
+    }
+
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
     /// and then `bob` tries to refund locked money so he will get 10% of his money back which will be
     /// 5000.
