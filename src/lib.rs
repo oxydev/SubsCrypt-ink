@@ -41,7 +41,7 @@ pub mod subscrypt {
         pub plan: PlanConsts,
         pub plan_index: u128,
         subscription_time: u64,
-        charastristics_values_encrypted: Vec<String>,
+        characteristics_values_encrypted: Vec<String>,
         //encrypted Data with public key of provider
         pub refunded: bool,
     }
@@ -90,7 +90,7 @@ pub mod subscrypt {
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct Provider {
         pub(crate) plans: Vec<PlanConsts>,
-        pub(crate) plans_charastristics: Vec<Vec<String>>,
+        pub(crate) plans_characteristics: Vec<Vec<String>>,
         pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
         pub subs_crypt_pass_hash: [u8; 32],
@@ -242,7 +242,7 @@ pub mod subscrypt {
             address: AccountId,
             username: String,
             subs_crypt_pass_hash: [u8; 32],
-            plans_charastristics: Vec<Vec<String>>,
+            plans_characteristics: Vec<Vec<String>>,
         ) {
 
             assert_eq!(prices.len(), durations.len(),"Wrong Number of Args");
@@ -283,7 +283,7 @@ pub mod subscrypt {
 
             let provider = Provider {
                 plans: Vec::new(),
-                plans_charastristics: Vec::new(),
+                plans_characteristics: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
                 subs_crypt_pass_hash,
@@ -294,10 +294,10 @@ pub mod subscrypt {
                 durations,
                 prices,
                 max_refund_permille_policies,
-                plans_charastristics,
+                plans_characteristics,
             );
             self.env().emit_event(ProviderRegisterEvent {
-                address: address,
+                address,
             });
         }
 
@@ -316,7 +316,7 @@ pub mod subscrypt {
             durations: Vec<u64>,
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
-            plan_charastristics: Vec<Vec<String>>,
+            plan_characteristics: Vec<Vec<String>>,
         ) {
             assert_eq!(prices.len(), durations.len(),"Wrong Number of Args");
             assert_eq!(
@@ -343,7 +343,7 @@ pub mod subscrypt {
                     max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
                 });
-                provider.plans_charastristics.push(plan_charastristics[i].clone());
+                provider.plans_characteristics.push(plan_characteristics[i].clone());
             }
             for i in 0..durations.len() {
                 self.env().emit_event(AddPlanEvent {
@@ -395,10 +395,10 @@ pub mod subscrypt {
         }
 
         #[ink(message)]
-        pub fn add_charastristic_for_plan(
+        pub fn add_characteristic_for_plan(
             &mut self,
             plan_index: u128,
-            charastristics: Vec<String>,
+            characteristics: Vec<String>,
         ) {
             let number: usize = plan_index.try_into().unwrap();
             let caller = self.env().caller();
@@ -408,13 +408,13 @@ pub mod subscrypt {
                 None => panic!("You should first register in the contract!"),
             };
 
-            let plan: &mut Vec<String> = match provider.plans_charastristics.get_mut(number) {
+            let plan: &mut Vec<String> = match provider.plans_characteristics.get_mut(number) {
                 Some(x) => x,
                 None => panic!("please select a valid plan")
             };
 
-            for i in 0..charastristics.len() {
-                plan.push(charastristics[i].clone());
+            for i in 0..characteristics.len() {
+                plan.push(characteristics[i].clone());
             }
 
         }
@@ -478,7 +478,7 @@ pub mod subscrypt {
             plan_index: u128,
             pass: [u8; 32],
             username: String,
-            charastristics_values_encrypted: Vec<String>,
+            characteristics_values_encrypted: Vec<String>,
         ) {
             let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
@@ -501,16 +501,16 @@ pub mod subscrypt {
             );
 
             let consts: PlanConsts = provider.plans[index];
-            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
+            let plan_characteristics: Vec<String> = provider.plans_characteristics[index].clone();
             
-            assert_eq!(charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            assert_eq!(characteristics_values_encrypted.len(), plan_characteristics.len(), "invalid characteristic values!");
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
             
 
-            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
+            let plan_characteristics: Vec<String> = provider.plans_characteristics[index].clone();
             
-            assert_eq!(charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            assert_eq!(characteristics_values_encrypted.len(), plan_characteristics.len(), "invalid characteristic values!");
             
             let mut address_has_not_username: bool = true;
             if self.address_to_username.contains_key(&caller) {
@@ -551,7 +551,7 @@ pub mod subscrypt {
                 plan: consts,
                 plan_index,
                 subscription_time: time,
-                charastristics_values_encrypted,
+                characteristics_values_encrypted,
                 refunded: false,
             };
 
@@ -583,7 +583,7 @@ pub mod subscrypt {
 
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
-                plan_index: plan_index,
+                plan_index,
                 subscription_time: time,
                 duration: consts.duration,
             });
@@ -592,7 +592,7 @@ pub mod subscrypt {
         pub fn renew(&mut self,
             provider_address: AccountId,
             plan_index: u128,
-            new_charastristics_values: Vec<String>,
+                     new_characteristics_values: Vec<String>,
         ) {
             let caller: AccountId = self.env().caller();
 
@@ -636,8 +636,8 @@ pub mod subscrypt {
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
 
-            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
-            assert_eq!(new_charastristics_values.len() + record.charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            let plan_characteristics: Vec<String> = provider.plans_characteristics[index].clone();
+            assert_eq!(new_characteristics_values.len() + record.characteristics_values_encrypted.len(), plan_characteristics.len(), "invalid characteristic values!");
             
             let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
@@ -656,10 +656,10 @@ pub mod subscrypt {
             );
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
             
-            let charastristics_values: &mut Vec<String> =&mut record.charastristics_values_encrypted.clone();
+            let characteristics_values: &mut Vec<String> =&mut record.characteristics_values_encrypted.clone();
 
-            for i in 0..new_charastristics_values.len() {
-                charastristics_values.push(new_charastristics_values[i].clone());
+            for i in 0..new_characteristics_values.len() {
+                characteristics_values.push(new_characteristics_values[i].clone());
             }
 
             let subscription_record = SubscriptionRecord {
@@ -667,7 +667,7 @@ pub mod subscrypt {
                 plan: consts,
                 plan_index,
                 subscription_time: start_time,
-                charastristics_values_encrypted: record.charastristics_values_encrypted.clone(),
+                characteristics_values_encrypted: record.characteristics_values_encrypted.clone(),
                 refunded: false,
             };
             
@@ -689,7 +689,7 @@ pub mod subscrypt {
             );
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
-                plan_index: plan_index,
+                plan_index,
                 subscription_time: start_time,
                 duration: consts.duration,
             });
@@ -1091,14 +1091,14 @@ pub mod subscrypt {
         }
 
         #[ink(message)]
-        pub fn get_plan_charastristics(&self, provider_address: AccountId, plan_index: u128) ->  Vec<String> {
+        pub fn get_plan_characteristics(&self, provider_address: AccountId, plan_index: u128) ->  Vec<String> {
             let number: usize = plan_index.try_into().unwrap();
             match match self
             .providers
             .get(&provider_address) {
                 Some(provider) => provider,
                 None => panic!("index is not valid!")
-            }.plans_charastristics.get(number) {
+            }.plans_characteristics.get(number) {
                 Some(x) => x.clone(),
                 None => panic!("please select a valid plan")
             }
@@ -1188,8 +1188,8 @@ pub mod subscrypt {
                     plan: plan_records.subscription_records[i].plan,
                     plan_index: plan_records.subscription_records[i].plan_index,
                     subscription_time: plan_records.subscription_records[i].subscription_time,
-                    charastristics_values_encrypted: plan_records.subscription_records[i]
-                        .charastristics_values_encrypted
+                    characteristics_values_encrypted: plan_records.subscription_records[i]
+                        .characteristics_values_encrypted
                         .clone(),
                     
                     refunded: plan_records.subscription_records[i].refunded,
@@ -1339,7 +1339,7 @@ pub mod subscrypt {
             ProcessReturningData{
                 withdrawing_amount: sum,
                 current_linked_list_head: cur_id,
-                reduced_length: reduced_length
+                reduced_length
             }
         }
     }
