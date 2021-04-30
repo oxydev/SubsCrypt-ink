@@ -34,6 +34,7 @@ pub mod utils {
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
         username: String,
+        plan_charastristics: Vec<Vec<String>>,
     ) {
         let p: String = "pass_phrase".to_string();
         let encodable = [p];
@@ -48,7 +49,7 @@ pub mod utils {
             account,
             username,
             output,
-            Vec::new(),
+            plan_charastristics,
         );
         for i in 0..durations.len() {
             assert_eq!(
@@ -170,12 +171,14 @@ pub mod utils {
         active_session_limits: Vec<u128>,
         prices: Vec<u128>,
         max_refund_permille_policies: Vec<u128>,
+        plan_charastristics: Vec<Vec<String>>,
     ) {
         subscrypt.add_plan(
             durations.clone(),
             active_session_limits.clone(),
             prices.clone(),
             max_refund_permille_policies.clone(),
+            plan_charastristics,
         );
         assert_eq!(
             subscrypt
