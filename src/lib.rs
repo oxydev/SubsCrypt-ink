@@ -75,7 +75,7 @@ pub mod subscrypt {
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct Provider {
-        pub(crate) plans: Vec<PlanConsts>,
+        pub plans: Vec<PlanConsts>,
         pub(crate) plans_characteristics: Vec<Vec<String>>,
         pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
@@ -137,7 +137,7 @@ pub mod subscrypt {
         start_time: u64,
         pub provider_register_fee: u128,
         // (provider AccountId) -> provider data
-        pub(crate) providers: HashMap<AccountId, Provider>,
+        pub providers: HashMap<AccountId, Provider>,
         // (user AccountId) -> user data
         pub users: HashMap<AccountId, User>,
         // (provider AccountId , day_id) -> payment admission
@@ -657,7 +657,7 @@ pub mod subscrypt {
                 Ok(())
             );
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
-            
+
             let subscription_record = SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
