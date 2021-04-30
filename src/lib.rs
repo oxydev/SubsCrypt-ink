@@ -975,7 +975,7 @@ pub mod subscrypt {
             address: AccountId,
         ) -> String {
             match self.address_to_username.get(&address) {
-                Some(username) => username.to_string(),
+                Some(username) => username.clone(),
                 None => panic!("this address has not a valid associated username!")
             }
         }
