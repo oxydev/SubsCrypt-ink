@@ -61,7 +61,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
 
@@ -85,7 +85,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
 
@@ -109,7 +109,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
     }
     /// Simple scenario that `alice` edit a plan as a provider
@@ -133,7 +133,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_edit_plan_routine(
             &mut subscrypt,
@@ -167,7 +167,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_edit_plan_routine(
             &mut subscrypt,
@@ -201,7 +201,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_add_plan_routine(
             &mut subscrypt,
@@ -210,7 +210,7 @@ pub mod tests {
             vec![3],
             vec![100000],
             vec![500],
-            vec![vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()]],
         )
     }
     /// Simple scenario that `alice` tries to add a plan as a provider
@@ -234,7 +234,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         subscrypt_add_plan_routine(
             &mut subscrypt,
@@ -243,7 +243,7 @@ pub mod tests {
             vec![3, 2],
             vec![100000],
             vec![500],
-            vec![vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()]],
         );
     }
 
@@ -269,7 +269,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         subscrypt.change_disable(1);
@@ -323,7 +323,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -380,7 +380,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -422,7 +422,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         set_caller(callee, accounts.bob, 49500);
 
@@ -465,7 +465,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -510,7 +510,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -556,7 +556,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -628,7 +628,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
         set_caller(callee, accounts.bob, 50000);
 
@@ -673,7 +673,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -725,7 +725,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -774,7 +774,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -815,7 +815,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -856,7 +856,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -913,7 +913,7 @@ pub mod tests {
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
 
         set_caller(callee, accounts.bob, 50000);
@@ -983,7 +983,7 @@ pub mod tests {
             vec![10000, 50000, 10000, 10000],
             vec![50, 100, 200, 100],
             "alice".to_string(),
-            vec![vec!["bla bla".to_string()], vec!["bla bla".to_string()], vec!["bla bla".to_string()], vec!["bla bla".to_string()]],
+            vec![vec!["key".to_string()], vec!["key".to_string()], vec!["key".to_string()], vec!["key".to_string()]],
         );
         set_caller(callee, accounts.bob, 50000);
 
