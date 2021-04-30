@@ -232,7 +232,7 @@ pub mod subscrypt {
             );
             assert_eq!(
                 durations.len(),
-                plans_charastristics.len(),
+                plans_characteristics.len(),
                 "Wrong Number of Args"
             );
 
@@ -302,7 +302,7 @@ pub mod subscrypt {
             );
             assert_eq!(
                 durations.len(),
-                plan_charastristics.len(),
+                plan_characteristics.len(),
                 "Wrong Number of Args"
             );
 
@@ -663,7 +663,7 @@ pub mod subscrypt {
                 plan: consts,
                 plan_index,
                 subscription_time: start_time,
-                charastristics_values_encrypted: new_charastristics_values.clone(),
+                characteristics_values_encrypted: new_characteristics_values.clone(),
                 refunded: false,
             };
 
