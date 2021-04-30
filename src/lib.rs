@@ -41,7 +41,7 @@ pub mod subscrypt {
         pub plan: PlanConsts,
         pub plan_index: u128,
         subscription_time: u64,
-        meta_data_encrypted: String,
+        charastristics_values_encrypted: Vec<String>,
         //encrypted Data with public key of provider
         pub refunded: bool,
     }
@@ -91,6 +91,7 @@ pub mod subscrypt {
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct Provider {
         pub(crate) plans: Vec<PlanConsts>,
+        pub(crate) plans_charastristics: Vec<Vec<String>>,
         pub(crate) money_address: AccountId,
         payment_manager: LinkedList,
         pub subs_crypt_pass_hash: [u8; 32],
@@ -243,7 +244,21 @@ pub mod subscrypt {
             address: AccountId,
             username: String,
             subs_crypt_pass_hash: [u8; 32],
+            plans_charastristics: Vec<Vec<String>>,
         ) {
+
+            assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
+            assert_eq!(
+                max_refund_permille_policies.len(),
+                active_session_limits.len(),
+                "Wrong Number of Args"
+            );
+            assert_eq!(
+                max_refund_permille_policies.len(),
+                plans_charastristics.len(),
+                "Wrong Number of Args"
+            );
 
             let caller = self.env().caller();
 
@@ -271,16 +286,19 @@ pub mod subscrypt {
 
             let provider = Provider {
                 plans: Vec::new(),
+                plans_charastristics: Vec::new(),
                 money_address: address,
                 payment_manager: LinkedList::new(),
                 subs_crypt_pass_hash,
             };
+
             self.providers.insert(caller, provider);
             self.add_plan(
                 durations,
                 active_session_limits,
                 prices,
                 max_refund_permille_policies,
+                plans_charastristics,
             );
             self.env().emit_event(ProviderRegisterEvent {
                 address: address,
@@ -303,12 +321,18 @@ pub mod subscrypt {
             active_session_limits: Vec<u128>,
             prices: Vec<u128>,
             max_refund_permille_policies: Vec<u128>,
+            plan_charastristics: Vec<Vec<String>>,
         ) {
             assert_eq!(durations.len(), active_session_limits.len(),"Wrong Number of Args");
             assert_eq!(prices.len(), active_session_limits.len(),"Wrong Number of Args");
             assert_eq!(
                 max_refund_permille_policies.len(),
                 active_session_limits.len(),
+                "Wrong Number of Args"
+            );
+            assert_eq!(
+                max_refund_permille_policies.len(),
+                plan_charastristics.len(),
                 "Wrong Number of Args"
             );
 
@@ -326,6 +350,7 @@ pub mod subscrypt {
                     max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
                 });
+                provider.plans_charastristics.push(plan_charastristics[i].clone());
             }
             for i in 0..durations.len() {
                 self.env().emit_event(AddPlanEvent {
@@ -376,6 +401,31 @@ pub mod subscrypt {
             plan.price = price;
             plan.max_refund_permille_policy = max_refund_permille_policies;
             plan.disabled = disabled;
+        }
+
+        #[ink(message)]
+        pub fn add_charastristic_for_plan(
+            &mut self,
+            plan_index: u128,
+            charastristics: Vec<String>,
+        ) {
+            let number: usize = plan_index.try_into().unwrap();
+            let caller = self.env().caller();
+
+            let provider = match self.providers.get_mut(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
+            let plan: &mut Vec<String> = match provider.plans_charastristics.get_mut(number) {
+                Some(x) => x,
+                None => panic!("please select a valid plan")
+            };
+
+            for i in 0..charastristics.len() {
+                plan.push(charastristics[i].clone());
+            }
+
         }
 
         /// Disabling previously created plans of the `caller`
@@ -437,7 +487,7 @@ pub mod subscrypt {
             plan_index: u128,
             pass: [u8; 32],
             username: String,
-            metadata: String,
+            charastristics_values_encrypted: Vec<String>,
         ) {
             let caller: AccountId = self.env().caller();
             let time: u64 = self.env().block_timestamp();
@@ -460,30 +510,39 @@ pub mod subscrypt {
             );
 
             let consts: PlanConsts = provider.plans[index];
-
+            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
+            
+            assert_eq!(charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
             
 
-            match self.address_to_username.get(&caller) {
-                Some(_) => {}
-                None => {
-                    match self.username_to_address.get(&username) {
-                        Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
-                        None => {}
-                    }
-                    self.address_to_username.insert(caller, username.clone());
-                    self.username_to_address.insert(username, caller);
+            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
+            
+            assert_eq!(charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            
+            let mut address_has_not_username: bool = true;
+            if self.address_to_username.contains_key(&caller) {
+                address_has_not_username = false;
+                match self.username_to_address.get(&username) {
+                    Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
+                    None => {}
                 }
             }
-
+            
             let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
             assert_eq!(self.transfer(
                     *addr,
                     consts.price * (1000 - consts.max_refund_permille_policy) / 1000
                 ), Ok(())
-             );
+            );
+
+            if address_has_not_username {
+                self.address_to_username.insert(caller, username.clone());
+                self.username_to_address.insert(username, caller);
+            }
+
             
             if !self.users.contains_key(&caller) {
                 self.users.insert(
@@ -501,7 +560,7 @@ pub mod subscrypt {
                 plan: consts,
                 plan_index,
                 subscription_time: time,
-                meta_data_encrypted: metadata,
+                charastristics_values_encrypted,
                 refunded: false,
             };
 
@@ -542,6 +601,7 @@ pub mod subscrypt {
         pub fn renew(&mut self,
             provider_address: AccountId,
             plan_index: u128,
+            new_charastristics_values: Vec<String>,
         ) {
             let caller: AccountId = self.env().caller();
 
@@ -581,8 +641,13 @@ pub mod subscrypt {
             let index : usize = plan_index.try_into().unwrap();
             let consts: PlanConsts = provider.plans[index];
 
+
             assert_eq!(consts.price, self.env().transferred_balance(), "You have to pay exact plan price");
             assert!(!consts.disabled, "Plan is currently disabled by provider");
+
+            let plan_charastristics: Vec<String> = provider.plans_charastristics[index].clone();
+            assert_eq!(new_charastristics_values.len() + record.charastristics_values_encrypted.len(), plan_charastristics.len(), "invalid charastristic values!");
+            
             let addr: &AccountId = &provider.money_address;
             // send money to money_address (1000 - plan.max_refund_permille_policy) / 1000;
             assert_eq!(self.transfer(
@@ -599,13 +664,19 @@ pub mod subscrypt {
                 Ok(())
             );
             let passed_time = record.plan.duration + record.subscription_time - self.start_time;
+            
+            let charastristics_values: &mut Vec<String> =&mut record.charastristics_values_encrypted.clone();
+
+            for i in 0..new_charastristics_values.len() {
+                charastristics_values.push(new_charastristics_values[i].clone());
+            }
 
             let subscription_record = SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
                 plan_index,
                 subscription_time: start_time,
-                meta_data_encrypted: record.meta_data_encrypted.clone(),
+                charastristics_values_encrypted: record.charastristics_values_encrypted.clone(),
                 refunded: false,
             };
             
@@ -644,7 +715,7 @@ pub mod subscrypt {
         /// # Panics
         /// If `caller` does not exist in `users`
         #[ink(message)]
-        pub fn set_subscrypt_pass(&mut self, pass: [u8; 32]) {
+        pub fn set_user_subscrypt_pass(&mut self, pass: [u8; 32]) {
             match self.users.get_mut(&self.env().caller()) {
                 Some(x) => x.subs_crypt_pass_hash = pass,
                 None => panic!("User doesn't exist!")
@@ -659,6 +730,14 @@ pub mod subscrypt {
         pub fn subs_crypt_pass_hash_for_each_provider(&mut self, provider_address: AccountId, pass: [u8; 32]) {
             match  self.records.get_mut(&(self.env().caller(), provider_address)) {
                 Some(x) => x.pass_hash = pass,
+                None => panic!("User doesn't exist!")
+            };
+        }
+
+        #[ink(message)]
+        pub fn set_provider_subscrypt_pass(&mut self, pass: [u8; 32]) {
+            match self.providers.get_mut(&self.env().caller()) {
+                Some(x) => x.subs_crypt_pass_hash = pass,
                 None => panic!("User doesn't exist!")
             };
         }
@@ -803,8 +882,7 @@ pub mod subscrypt {
         ) -> bool {
             return match self.records.get(&(user, provider)) {
                 Some(record) => {
-                    let encodable = [pass_phrase];
-                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
                     return encoded == record.pass_hash
                 },
                 None => false
@@ -842,8 +920,7 @@ pub mod subscrypt {
         ) -> bool {
             return match self.providers.get(&provider) {
                 Some(provider) => {
-                    let encodable = [pass_phrase];
-                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
                     return encoded == provider.subs_crypt_pass_hash
                 },
                 None => false
@@ -872,8 +949,7 @@ pub mod subscrypt {
         ) -> bool {
             return match self.users.get(&user) {
                 Some(user) => {
-                    let encodable = [pass_phrase];
-                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+                    let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
                     return encoded == user.subs_crypt_pass_hash
                 },
                 None => false
@@ -892,7 +968,26 @@ pub mod subscrypt {
             };
             self.user_check_auth(address, pass_phrase)
         }
-        
+
+
+        #[ink(message)]
+        pub fn is_username_available(
+            &self,
+            username: String,
+        ) -> bool {
+            !self.username_to_address.contains_key(&username)
+        }
+
+
+        pub fn get_username_by_address(
+            &self,
+            address: AccountId,
+        ) -> String {
+            match self.address_to_username.get(&address) {
+                Some(username) => username.to_string(),
+                None => panic!("this address has not a valid associated username!")
+            }
+        }
 
 
         /// `user` can use this function to retrieve her whole subscription history to
@@ -916,8 +1011,7 @@ pub mod subscrypt {
                 Some(name) => *name,
                 None => panic!("this username is invalid!")
             };
-            let encodable = [phrase];
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&phrase);
             assert_eq!(
                 encoded,
                 self.users.get(&user).unwrap().subs_crypt_pass_hash,
@@ -962,8 +1056,7 @@ pub mod subscrypt {
                 Some(name) => *name,
                 None => panic!("this username is invalid!")
             };
-            let encodable = [phrase];
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&encodable);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&phrase);
             assert_eq!(
                 encoded,
                 self.records
@@ -1002,6 +1095,20 @@ pub mod subscrypt {
                 None => panic!("index is not valid!")
             }.plans.get(number) {
                 Some(x) => *x,
+                None => panic!("please select a valid plan")
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_plan_charastristics(&self, provider_address: AccountId, plan_index: u128) ->  Vec<String> {
+            let number: usize = plan_index.try_into().unwrap();
+            match match self
+            .providers
+            .get(&provider_address) {
+                Some(provider) => provider,
+                None => panic!("index is not valid!")
+            }.plans_charastristics.get(number) {
+                Some(x) => x.clone(),
                 None => panic!("please select a valid plan")
             }
         }
@@ -1090,9 +1197,10 @@ pub mod subscrypt {
                     plan: plan_records.subscription_records[i].plan,
                     plan_index: plan_records.subscription_records[i].plan_index,
                     subscription_time: plan_records.subscription_records[i].subscription_time,
-                    meta_data_encrypted: plan_records.subscription_records[i]
-                        .meta_data_encrypted
+                    charastristics_values_encrypted: plan_records.subscription_records[i]
+                        .charastristics_values_encrypted
                         .clone(),
+                    
                     refunded: plan_records.subscription_records[i].refunded,
                 };
                 data.push(k);

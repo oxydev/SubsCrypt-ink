@@ -48,6 +48,7 @@ pub mod utils {
             account,
             username,
             output,
+            Vec::new(),
         );
         for i in 0..durations.len() {
             assert_eq!(
