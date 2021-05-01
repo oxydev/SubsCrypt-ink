@@ -956,7 +956,8 @@ pub mod subscrypt {
         pub fn is_username_available(&self, username: String) -> bool {
             !self.username_to_address.contains_key(&username)
         }
-
+        
+        #[ink(message)]
         pub fn get_username_by_address(&self, address: AccountId) -> String {
             match self.address_to_username.get(&address) {
                 Some(username) => username.clone(),
