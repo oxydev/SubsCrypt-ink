@@ -958,8 +958,9 @@ pub mod subscrypt {
         }
         
         #[ink(message)]
-        pub fn get_username_by_address(&self, address: AccountId) -> String {
-            match self.address_to_username.get(&address) {
+        pub fn get_username(&self) -> String {
+            let caller: AccountId = self.env().caller();
+            match self.address_to_username.get(&caller) {
                 Some(username) => username.clone(),
                 None => panic!("this address has not a valid associated username!"),
             }
