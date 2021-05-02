@@ -30,7 +30,7 @@ pub mod subscrypt {
     /// * plan
     /// * plan_index
     /// * subscription_time : this stores start time of each subscription (used in linkedList)
-    /// * meta_data_encrypted
+    /// * characteristics_values_encrypted : this is the features that user has chosen for her subscription
     /// * refunded
     #[derive(scale::Encode, scale::Decode, SpreadLayout, PackedLayout, Debug)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
@@ -59,7 +59,7 @@ pub mod subscrypt {
     /// # Note
     /// `max_refund_permille_policy` is out of 1000
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug, Clone, Copy)]
-    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, std::cmp::PartialEq))]
     pub struct PlanConsts {
         pub duration: u64,
         pub(crate) price: u128,
@@ -72,6 +72,8 @@ pub mod subscrypt {
     /// * plans
     /// * money_address : provider earned money will be sent to this address
     /// * payment_manager : struct for handling refund requests
+    /// * subscrypt_pass_hash : password of provider to login into SubsCrypt Dashboard
+    /// * plans_characteristics : array of key arrays of features of that plan
     #[derive(scale::Encode, scale::Decode, PackedLayout, SpreadLayout, Debug)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub struct Provider {
@@ -131,7 +133,9 @@ pub mod subscrypt {
     /// * `daily_locked_amounts` : the hashmap that stores `DailyLockedAmount` data of each day in order
     /// * `records` : the hashmap that stores user's subscription records data
     /// * `plan_index_to_record_index` : the hashmap that stores user's last `SubscriptionRecord` index
-    /// in `PlanRecord.subscription_records` for each (user, provider, plan_index)
+    /// * `PlanRecord.subscription_records` for each (user, provider, plan_index)
+    /// * `username_to_address` mapping of Usernames to Addresses
+    /// * `address_to_username` mapping of Addresses to Usernames
     #[ink(storage)]
     pub struct Subscrypt {
         start_time: u64,
@@ -148,7 +152,7 @@ pub mod subscrypt {
         plan_index_to_record_index: HashMap<(AccountId, AccountId, u128), u128>,
         // username -> user AccountId
         username_to_address: HashMap<String, AccountId>,
-        // username -> user AccountId
+        // user AccountId -> username
         address_to_username: HashMap<AccountId, String>,
     }
 
@@ -206,13 +210,17 @@ pub mod subscrypt {
         /// Registering a new `Provider` by paying the required fee amount (`provider_register_fee`)
         ///
         /// # Panics
-        ///
+        /// if length of plan inputs are not the same
         /// If paid amount is less than `provider_register_fee`
         /// if same `AccountId` registered as provider previously.
+        /// if username is already been taken by someone else
+        ///
+        /// # Emits
+        /// ProviderRegisterEvent
+        /// AddPlanEvent
         ///
         /// # Examples
-        /// Examples of different situations in `provider_register_works` , `provider_register_works2` and
-        /// `provider_register_works3` in `tests/test.rs`
+        /// Examples of different situations in `tests/test.rs`
         #[ink(message, payable)]
         pub fn provider_register(
             &mut self,
@@ -278,11 +286,14 @@ pub mod subscrypt {
         ///
         /// # Panics
         ///
-        /// If the size of vectors passed to the methods are different
+        /// If the size of vectors passed to the method are different
         /// If the caller is not a valid provider.
         ///
+        /// # Emits
+        ///  AddPlanEvent
+        ///
         /// # Examples
-        /// Examples in `add_plan_works` , `add_plan_works2`
+        /// Examples in `add_plan_works` , `add_plan_fails_wrong_arguments`
         #[ink(message)]
         pub fn add_plan(
             &mut self,
@@ -369,6 +380,18 @@ pub mod subscrypt {
             plan.disabled = disabled;
         }
 
+        /// Adding new characteristics to existing plans
+        ///
+        /// # Note
+        ///
+        /// This will not effect the users that subscribed prior to the edition of plan
+        ///
+        /// # Panics
+        /// If caller is not `provider`
+        /// If `plan_index` is bigger than the length of `plans` of `provider`
+        ///
+        /// # Examples
+        /// Examples of different situations in `add_characteristic_for_plan_works`
         #[ink(message)]
         pub fn add_characteristic_for_plan(
             &mut self,
@@ -421,7 +444,7 @@ pub mod subscrypt {
             }
         }
 
-        /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and `metadata`
+        /// Subscribing to `plan_index` of the `provider_address` with `Sha2x256` hashed `pass` and array of characteristics_values_encrypted
         ///
         /// In this function, we will lock (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000
         /// in the `Linked List` of the contract and will transfer the rest of paid money directly to provider
@@ -442,9 +465,13 @@ pub mod subscrypt {
         /// If `caller` is already subscribed to plan
         /// If `provider` does not exist
         /// If `plan_index` is bigger than the length of `plans` of `provider_address`
+        /// If 'username' has already been taken
+        ///
+        /// # Emits
+        /// SubscribeEvent
         ///
         /// # Examples
-        /// Examples in `subscribe_works` and `subscribe_works2` in `tests/test.rs`
+        /// Examples in `subscribe_works` and `subscribe_fails_insufficient_paying` in `tests/test.rs`
         #[ink(message, payable)]
         pub fn subscribe(
             &mut self,
@@ -576,6 +603,32 @@ pub mod subscrypt {
                 duration: consts.duration,
             });
         }
+
+        /// Renewing subscription of `plan_index` of the `provider_address` array of characteristics_values_encrypted
+        ///
+        /// In this function, we will first unlock (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000
+        /// in the `Linked List` of the contract and will also send that alongside the ((1000 - `plan.max_refund_permille_policy`) * `transferred_balance`) / 1000
+        /// of new recieved money and send that to provider. And (`plan.max_refund_permille_policy` * `transferred_balance`) / 1000 will be locked in the `Linked List`
+        ///
+        /// # Note
+        ///
+        /// The start of that renewed subscription will be at the end of current subscription.
+        /// The current subscription can not be refunded.
+        ///
+        ///
+        /// # Panics
+        /// If paid amount is not equal to `price` of the plan
+        /// If plan is `disabled`
+        /// If `caller` is not already subscribed to plan
+        /// If `provider` does not exist
+        /// If `plan_index` is bigger than the length of `plans` of `provider_address`
+        ///
+        /// # Emits
+        /// SubscribeEvent
+        ///
+        /// # Examples
+        /// Examples in `renew_works` in `tests/test.rs`
+        #[ink(message, payable)]
         pub fn renew(
             &mut self,
             provider_address: AccountId,
@@ -706,10 +759,10 @@ pub mod subscrypt {
             };
         }
 
-        /// Setting the `subscrypt_pass_hash_for_each_provider` of caller to `pass`
+        /// Setting the `pass_hash` of caller in specific provider to `pass`
         ///
         /// # Panics
-        /// If `caller` does not exist in `providers`
+        /// If `caller` does not exist in `users`
         #[ink(message)]
         pub fn subs_crypt_pass_hash_for_each_provider(
             &mut self,
@@ -724,7 +777,15 @@ pub mod subscrypt {
                 None => panic!("User doesn't exist!"),
             };
         }
-
+        /// Setting the `subscrypt_pass_hash` of caller to `pass`
+        ///
+        /// # Note
+        ///
+        /// The `subscrypt_pass_hash` will also be set in `provider_register` function in first subscription
+        ///
+        ///
+        /// # Panics
+        /// If `caller` does not exist in `providers`
         #[ink(message)]
         pub fn set_provider_subscrypt_pass(&mut self, pass: [u8; 32]) {
             match self.providers.get_mut(&self.env().caller()) {
@@ -860,9 +921,9 @@ pub mod subscrypt {
             customer_portion_locked_money
         }
 
-        /// This function indicate if `user` can authenticate with given `token` and `pass_phrase`
+        /// This function indicate if `user` can authenticate with given `pass_phrase`
         /// # Note
-        /// `user` are encouraged to have different `token` and `pass_phrase` for each provider
+        /// `user` are encouraged to have different `pass_phrase` for each provider
         ///
         /// # Returns
         /// `bool` is returned which shows the correctness of auth
@@ -887,7 +948,7 @@ pub mod subscrypt {
 
         /// This function indicate if `username` can authenticate with given `pass_phrase`
         /// # Note
-        /// `user` are encouraged to have different `token` and `pass_phrase` for each provider
+        /// `user` are encouraged to have different `pass_phrase` for each provider
         ///
         /// # Returns
         /// `bool` is returned which shows the correctness of auth
@@ -908,6 +969,13 @@ pub mod subscrypt {
             self.check_auth(user, provider, pass_phrase)
         }
 
+        /// This function indicate if `provider` can authenticate with given `pass_phrase`
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn provider_check_auth(&self, provider: AccountId, pass_phrase: String) -> bool {
             return match self.providers.get(&provider) {
@@ -919,6 +987,13 @@ pub mod subscrypt {
             };
         }
 
+        /// This function indicate if `provider` can authenticate with given `pass_phrase` and `username`
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn provider_check_auth_with_username(
             &self,
@@ -932,6 +1007,13 @@ pub mod subscrypt {
             self.provider_check_auth(address, pass_phrase)
         }
 
+        /// This function indicate if `user` can authenticate with given `pass_phrase`
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn user_check_auth(&self, user: AccountId, pass_phrase: String) -> bool {
             return match self.users.get(&user) {
@@ -943,6 +1025,13 @@ pub mod subscrypt {
             };
         }
 
+        /// This function indicate if `user` can authenticate with given `pass_phrase` and `username`
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn user_check_auth_with_username(&self, username: String, pass_phrase: String) -> bool {
             let address = match self.username_to_address.get(&username) {
@@ -952,11 +1041,25 @@ pub mod subscrypt {
             self.user_check_auth(address, pass_phrase)
         }
 
+        /// This function indicate if `username` is available
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn is_username_available(&self, username: String) -> bool {
             !self.username_to_address.contains_key(&username)
         }
-        
+
+        /// This function indicate `username` of `caller`
+        ///
+        /// # Returns
+        /// `bool` is returned which shows the correctness of auth
+        ///
+        /// # Example
+        /// Examples in `check_auth_works` in `tests/test.rs`
         #[ink(message)]
         pub fn get_username(&self) -> String {
             let caller: AccountId = self.env().caller();
@@ -969,8 +1072,7 @@ pub mod subscrypt {
         /// `user` can use this function to retrieve her whole subscription history to
         /// different providers.
         /// # Note
-        /// `user` has to provide their main `token` and `phrase` which will be used in
-        /// SubsCrypt dashboard
+        /// `user` has to provide their `pass_phrase` which will be used in SubsCrypt dashboard
         ///
         /// # Returns
         /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
@@ -981,13 +1083,13 @@ pub mod subscrypt {
         pub fn retrieve_whole_data_with_username(
             &self,
             username: String,
-            phrase: String,
+            pass_phrase: String,
         ) -> Vec<SubscriptionRecord> {
             let user = match self.username_to_address.get(&username) {
                 Some(name) => *name,
                 None => panic!("this username is invalid!"),
             };
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&phrase);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
             assert_eq!(
                 encoded,
                 self.users.get(&user).unwrap().subscrypt_pass_hash,
@@ -1014,7 +1116,7 @@ pub mod subscrypt {
         /// provider.
         ///
         /// # Note
-        /// `user` has to provide their `token` and `phrase` for that provider.
+        /// `user` has to provide their `pass_phrase` for that provider.
         ///
         /// # Returns
         /// `Vec<SubscriptionRecord>` is returned which is a vector of `SubscriptionRecord` struct
@@ -1026,13 +1128,13 @@ pub mod subscrypt {
             &self,
             username: String,
             provider_address: AccountId,
-            phrase: String,
+            pass_phrase: String,
         ) -> Vec<SubscriptionRecord> {
             let user = match self.username_to_address.get(&username) {
                 Some(name) => *name,
                 None => panic!("this username is invalid!"),
             };
-            let encoded = self.env().hash_encoded::<Sha2x256, _>(&phrase);
+            let encoded = self.env().hash_encoded::<Sha2x256, _>(&pass_phrase);
             assert_eq!(
                 encoded,
                 self.records
@@ -1061,6 +1163,13 @@ pub mod subscrypt {
             self.retrieve_data(caller, provider_address)
         }
 
+        /// We can get plan data in this function
+        ///
+        /// # Returns
+        /// `PlanConsts` is returned
+        ///
+        /// # Example
+        /// Examples in `tests/test.rs`
         #[ink(message)]
         pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) -> PlanConsts {
             let number: usize = plan_index.try_into().unwrap();
@@ -1076,6 +1185,13 @@ pub mod subscrypt {
             }
         }
 
+        /// We can get plan characteristic keys in this function
+        ///
+        /// # Returns
+        /// `Vec<String>` is returned
+        ///
+        /// # Example
+        /// Examples in `tests/test.rs`
         #[ink(message)]
         pub fn get_plan_characteristics(
             &self,
@@ -1102,7 +1218,7 @@ pub mod subscrypt {
         /// if `user` refunded or her subscription is expired then this function will return false
         ///
         /// # Returns
-        /// `bool` which means if `user` is subsribed or not
+        /// `bool` which means if `user` is subscribed or not
         ///
         /// # Example
         /// Examples in `check_subscription_works` in `tests/test.rs`
@@ -1138,6 +1254,17 @@ pub mod subscrypt {
             true
         }
 
+        /// This function can be called to check if `user` has a valid subscription to the
+        /// specific `plan_index` of `provider`.
+        ///
+        /// # Note
+        /// if `user` refunded or her subscription is expired then this function will return false
+        ///
+        /// # Returns
+        /// `bool` which means if `user` is subscribed or not
+        ///
+        /// # Example
+        /// Examples in `check_subscription_works` in `tests/test.rs`
         #[ink(message)]
         pub fn check_subscription_with_username(
             &self,
