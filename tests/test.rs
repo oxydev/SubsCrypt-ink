@@ -8,6 +8,7 @@ mod utils;
 #[cfg(test)]
 pub mod tests {
     use crate::subscrypt::subscrypt::LinkedList;
+    use crate::subscrypt::subscrypt::PlanConsts;
     use crate::subscrypt::subscrypt::Subscrypt;
     use crate::utils::utils::{
         set_account_balance, set_caller, subscrypt_add_plan_routine, subscrypt_edit_plan_routine,
@@ -234,6 +235,34 @@ pub mod tests {
             vec![500],
             vec![vec!["key".to_string()]],
         );
+    }
+
+    /// Simple scenario that `alice` tries to add characteristic
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` tries to add more plans but obviously she is doing it wrong
+    #[ink::test]
+    fn add_characteristic_for_plan_works() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![10000, 50000],
+            vec![50, 100],
+            "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
+        );
+        subscrypt.add_characteristic_for_plan(0, vec!["key2".to_string(), "key3".to_string()]);
+        assert_eq!(
+            subscrypt.get_plan_characteristics(accounts.alice, 0),
+            vec!["key".to_string(), "key2".to_string(), "key3".to_string()]
+        )
     }
 
     /// Simple scenario that `alice` disables a plan as a provider
@@ -807,6 +836,15 @@ pub mod tests {
             subscrypt.check_subscription(accounts.bob, accounts.alice, 0),
             false
         );
+
+        assert_eq!(
+            subscrypt.check_subscription_with_username("bob".to_string(), accounts.alice, 1),
+            true
+        );
+        assert_eq!(
+            subscrypt.check_subscription_with_username("bob".to_string(), accounts.alice, 0),
+            false
+        );
     }
 
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
@@ -1067,19 +1105,97 @@ pub mod tests {
                 .refunded,
             false
         );
-        let s = subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phras".parse().unwrap());
-        assert_eq!(s, false);
+        assert_eq!(
+            subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phras".parse().unwrap()),
+            false
+        );
 
         // No record for user charlie & provider alice
-        let s = subscrypt.check_auth(
-            accounts.charlie,
-            accounts.alice,
-            "pass_phrase".parse().unwrap(),
+        assert_eq!(
+            subscrypt.check_auth(
+                accounts.charlie,
+                accounts.alice,
+                "pass_phrase".parse().unwrap()
+            ),
+            false
         );
-        assert_eq!(s, false);
 
-        let s = subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phrase".parse().unwrap());
-        assert_eq!(s, true);
+        assert_eq!(
+            subscrypt.check_auth_with_username(
+                "bob".to_string(),
+                accounts.alice,
+                "pass_phras".to_string()
+            ),
+            false
+        );
+
+        assert_eq!(
+            subscrypt.check_auth_with_username(
+                "bob".to_string(),
+                accounts.alice,
+                "pass_phrase".to_string(),
+            ),
+            true
+        );
+
+        assert_eq!(
+            subscrypt.check_auth(accounts.bob, accounts.alice, "pass_phrase".to_string()),
+            true
+        );
+
+        assert_eq!(
+            subscrypt
+                .provider_check_auth_with_username("alice".to_string(), "pass_phras".to_string()),
+            false
+        );
+        assert_eq!(
+            subscrypt
+                .provider_check_auth_with_username("alice".to_string(), "pass_phrase".to_string()),
+            true
+        );
+
+        assert_eq!(
+            subscrypt.provider_check_auth(accounts.alice, "pass_phras".to_string()),
+            false
+        );
+        assert_eq!(
+            subscrypt.provider_check_auth(accounts.alice, "pass_phrase".to_string()),
+            true
+        );
+
+        assert_eq!(
+            subscrypt.user_check_auth_with_username("bob".to_string(), "pass_phras".to_string()),
+            false
+        );
+        assert_eq!(
+            subscrypt.user_check_auth_with_username("bob".to_string(), "pass_phrase".to_string()),
+            true
+        );
+
+        assert_eq!(
+            subscrypt.user_check_auth(accounts.bob, "pass_phras".to_string()),
+            false
+        );
+        assert_eq!(
+            subscrypt.user_check_auth(accounts.bob, "pass_phrase".to_string()),
+            true
+        );
+
+        assert_eq!(subscrypt.is_username_available("bobb".to_string()), true);
+        assert_eq!(subscrypt.is_username_available("bob".to_string()), false);
+        set_caller(callee, accounts.bob, 0);
+        assert_eq!(subscrypt.get_username(), "bob".to_string());
+        set_caller(callee, accounts.alice, 0);
+        assert_eq!(subscrypt.get_username(), "alice".to_string());
+        assert_eq!(
+            subscrypt.get_plan_data(accounts.alice, 0),
+            PlanConsts {
+                duration: 60 * 60 * 24,
+                price: 10000,
+                max_refund_permille_policy: 50,
+                disabled: false
+            }
+        );
     }
 
     #[ink::test]
