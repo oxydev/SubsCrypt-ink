@@ -1272,11 +1272,10 @@ pub mod subscrypt {
             provider_address: AccountId,
             plan_index: u128,
         ) -> bool {
-            let user = match self.username_to_address.get(&username) {
-                Some(name) => *name,
-                None => panic!("this username is invalid!"),
-            };
-            self.check_subscription(user, provider_address, plan_index)
+            match self.username_to_address.get(&username) {
+                Some(name) => self.check_subscription(*name, provider_address, plan_index),
+                None => false,
+            }
         }
 
         fn retrieve_whole_data(&self, caller: AccountId) -> Vec<SubscriptionRecord> {
