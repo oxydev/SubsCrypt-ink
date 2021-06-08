@@ -1081,7 +1081,7 @@ pub mod subscrypt {
         pub fn get_address_by_username(&self, username: String) -> AccountId {
             match self.username_to_address.get(&username) {
                 Some(address) => *address,
-                None => panic!("this address has not a valid associated username!"),
+                None => panic!("this username has not a valid associated address!"),
             }
         }
 
