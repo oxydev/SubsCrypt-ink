@@ -1189,15 +1189,15 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) -> PlanConsts {
             let number: usize = plan_index.try_into().unwrap();
-            match match self.providers.get(&provider_address) {
-                Some(provider) => provider,
-                None => panic!("index is not valid!"),
-            }
-            .plans
-            .get(number)
-            {
-                Some(x) => *x,
-                None => panic!("please select a valid plan"),
+            match self.providers.get(&provider_address) {
+                Some(provider) => match provider
+                .plans
+                .get(number)
+                {
+                    Some(x) => *x,
+                    None => panic!("please select a valid plan"),
+                },
+                None => panic!("provider address is not valid!"),
             }
         }
 
@@ -1210,10 +1210,9 @@ pub mod subscrypt {
         /// Examples in `tests/test.rs`
         #[ink(message)]
         pub fn get_plan_length(&self, provider_address: AccountId) -> u128 {
-            if let Some(provider) = self.providers.get(&provider_address) {
-                provider.plans.len().try_into().unwrap()
-            } else {
-                0
+            match self.providers.get(&provider_address) {
+                Some(provider) => provider.plans.len().try_into().unwrap(),
+                None => 0,
             }
         }
 
