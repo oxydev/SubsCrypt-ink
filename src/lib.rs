@@ -17,7 +17,7 @@
 #[ink_lang::contract]
 pub mod subscrypt {
     use core::convert::TryInto;
-    use ink_env::hash::Sha2x256;
+    use ink_env::hash::{HashOutput, Sha2x256};
     use ink_env::Error;
     use ink_prelude::string::String;
     use ink_prelude::vec;
@@ -244,8 +244,12 @@ pub mod subscrypt {
                 "Wrong Number of Args"
             );
             let caller = self.env().caller();
+            let mut address_has_not_username: bool = true;
+
             match self.address_to_username.get(&caller) {
-                Some(_) => {}
+                Some(_) => {
+                    address_has_not_username = false;
+                }
                 None => {
                     if let Some(address) = self.username_to_address.get(&username) {
                         assert_eq!(*address, caller, "this username is invalid!")
@@ -261,8 +265,11 @@ pub mod subscrypt {
                 !self.providers.contains_key(&caller),
                 "You can not register again in the contract!"
             );
-            self.address_to_username.insert(caller, username.clone());
-            self.username_to_address.insert(username, caller);
+
+            if address_has_not_username {
+                self.address_to_username.insert(caller, username.clone());
+                self.username_to_address.insert(username, caller);
+            }
 
             let provider = Provider {
                 plans: Vec::new(),
@@ -526,8 +533,9 @@ pub mod subscrypt {
             let mut address_has_not_username: bool = true;
             if self.address_to_username.contains_key(&caller) {
                 address_has_not_username = false;
+            } else {
                 match self.username_to_address.get(&username) {
-                    Some(address) => assert_eq!(*address, caller, "this username is invalid!"),
+                    Some(_) => panic!("username is invalid!"),
                     None => {}
                 }
             }
@@ -1069,6 +1077,14 @@ pub mod subscrypt {
             }
         }
 
+        #[ink(message)]
+        pub fn get_address_by_username(&self, username: String) -> AccountId {
+            match self.username_to_address.get(&username) {
+                Some(address) => *address,
+                None => panic!("this username has not a valid associated address!"),
+            }
+        }
+
         /// `user` can use this function to retrieve her whole subscription history to
         /// different providers.
         /// # Note
@@ -1173,15 +1189,27 @@ pub mod subscrypt {
         #[ink(message)]
         pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) -> PlanConsts {
             let number: usize = plan_index.try_into().unwrap();
-            match match self.providers.get(&provider_address) {
-                Some(provider) => provider,
-                None => panic!("index is not valid!"),
+            match self.providers.get(&provider_address) {
+                Some(provider) => match provider.plans.get(number) {
+                    Some(x) => *x,
+                    None => panic!("please select a valid plan"),
+                },
+                None => panic!("provider address is not valid!"),
             }
-            .plans
-            .get(number)
-            {
-                Some(x) => *x,
-                None => panic!("please select a valid plan"),
+        }
+
+        /// We can get plan count in this function
+        ///
+        /// # Returns
+        /// a number is returned
+        ///
+        /// # Example
+        /// Examples in `tests/test.rs`
+        #[ink(message)]
+        pub fn get_plan_length(&self, provider_address: AccountId) -> u128 {
+            match self.providers.get(&provider_address) {
+                Some(provider) => provider.plans.len().try_into().unwrap(),
+                None => 0,
             }
         }
 
@@ -1209,6 +1237,18 @@ pub mod subscrypt {
                 Some(x) => x.clone(),
                 None => panic!("please select a valid plan"),
             }
+        }
+
+        /// Get hash of String
+        ///
+        /// # Returns
+        /// `String` is returned
+        ///    
+        #[ink(message)]
+        pub fn get_sha2(&self, string: String) -> [u8; 32] {
+            let mut output = <Sha2x256 as HashOutput>::Type::default(); // 256-bit buffer
+            ink_env::hash_encoded::<Sha2x256, _>(&string, &mut output);
+            return output;
         }
 
         /// This function can be called to check if `user` has a valid subscription to the
