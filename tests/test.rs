@@ -63,6 +63,7 @@ pub mod tests {
             "alice".to_string(),
             vec![vec!["key".to_string()], vec!["key".to_string()]],
         );
+        assert_eq!(subscrypt.get_plan_length(accounts.alice), 2);
     }
 
     /// Simple scenario that `alice` tries to register as a provider but it fails because of
@@ -461,15 +462,41 @@ pub mod tests {
             "bob".to_string(),
             vec!["nothing important".to_string()],
         );
-        assert_eq!(
-            subscrypt
-                .users
-                .get(&accounts.bob)
-                .unwrap()
-                .list_of_providers
-                .get(0)
-                .unwrap(),
-            &accounts.alice
+    }
+
+    /// Simple scenario that `alice` register as a provider and `bob` tries to subscribe to her second plan
+    /// `alice` has two plans. One is daily and other is monthly.
+    /// `alice` also pays 100 because of the policy of the registering in contract.
+    /// `bob` pays 49500 for her second plan price which is less than 50000 so this will fail
+    #[ink::test]
+    #[should_panic(expected = "username is invalid")]
+    fn subscribe_fails_duplicate_username() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+        set_account_balance(callee, 50100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![10000, 50000],
+            vec![50, 100],
+            "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
+        );
+        set_caller(callee, accounts.bob, 50000);
+
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "alice".to_string(),
+            vec!["nothing important".to_string()],
         );
     }
 

@@ -17,7 +17,7 @@
 #[ink_lang::contract]
 pub mod subscrypt {
     use core::convert::TryInto;
-    use ink_env::hash::{HashOutput,Sha2x256};
+    use ink_env::hash::{HashOutput, Sha2x256};
     use ink_env::Error;
     use ink_prelude::string::String;
     use ink_prelude::vec;
@@ -267,10 +267,10 @@ pub mod subscrypt {
                 !self.providers.contains_key(&caller),
                 "You can not register again in the contract!"
             );
-            
+
             if address_has_not_username {
                 self.address_to_username.insert(caller, username.clone());
-                self.username_to_address.insert(username, caller);    
+                self.username_to_address.insert(username, caller);
             }
 
             let provider = Provider {
@@ -1201,10 +1201,7 @@ pub mod subscrypt {
         pub fn get_plan_data(&self, provider_address: AccountId, plan_index: u128) -> PlanConsts {
             let number: usize = plan_index.try_into().unwrap();
             match self.providers.get(&provider_address) {
-                Some(provider) => match provider
-                .plans
-                .get(number)
-                {
+                Some(provider) => match provider.plans.get(number) {
                     Some(x) => *x,
                     None => panic!("please select a valid plan"),
                 },
@@ -1215,7 +1212,7 @@ pub mod subscrypt {
         /// We can get plan count in this function
         ///
         /// # Returns
-        /// `PlanCount` is returned
+        /// a number is returned
         ///
         /// # Example
         /// Examples in `tests/test.rs`
@@ -1264,8 +1261,6 @@ pub mod subscrypt {
             ink_env::hash_encoded::<Sha2x256, _>(&string, &mut output);
             return output;
         }
-
-        
 
         /// This function can be called to check if `user` has a valid subscription to the
         /// specific `plan_index` of `provider`.
