@@ -171,9 +171,10 @@ pub mod subscrypt {
     #[ink(event)]
     pub struct AddPlanEvent {
         #[ink(topic)]
-        owner: AccountId,
+        provider: AccountId,
         duration: u64,
         price: u128,
+        index: u128,
     }
 
     #[ink(event)]
@@ -182,6 +183,7 @@ pub mod subscrypt {
         provider: AccountId,
         #[ink(topic)]
         plan_index: u128,
+        user_address: AccountId,
         subscription_time: u64,
         duration: u64,
     }
@@ -327,6 +329,9 @@ pub mod subscrypt {
                 Some(x) => x,
                 None => panic!("You should first register in the contract!"),
             };
+
+            let mut index: u128 = provider.plans.len().try_into().unwrap();
+
             for i in 0..durations.len() {
                 provider.plans.push(PlanConsts {
                     duration: durations[i],
@@ -334,16 +339,20 @@ pub mod subscrypt {
                     max_refund_permille_policy: max_refund_permille_policies[i],
                     disabled: false,
                 });
+                
                 provider
                     .plans_characteristics
                     .push(plan_characteristics[i].clone());
             }
             for i in 0..durations.len() {
                 self.env().emit_event(AddPlanEvent {
-                    owner: caller,
+                    provider: caller,
                     duration: durations[i],
                     price: prices[i],
+                    index
                 });
+
+                index += 1;
             }
         }
 
@@ -607,6 +616,7 @@ pub mod subscrypt {
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
                 plan_index,
+                user_address: caller,
                 subscription_time: time,
                 duration: consts.duration,
             });
@@ -745,6 +755,7 @@ pub mod subscrypt {
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
                 plan_index,
+                user_address: caller,
                 subscription_time: start_time,
                 duration: consts.duration,
             });
