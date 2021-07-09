@@ -184,6 +184,8 @@ pub mod subscrypt {
         plan_index: u128,
         subscription_time: u64,
         duration: u64,
+        price: u128,
+        characteristics: Vec<String>,
     }
 
     impl Subscrypt {
@@ -565,6 +567,8 @@ pub mod subscrypt {
                 );
             }
 
+            let characteristics_values: Vec<String> = characteristics_values_encrypted.clone();
+
             let subscription_record = SubscriptionRecord {
                 provider: provider_address,
                 plan: consts,
@@ -604,11 +608,14 @@ pub mod subscrypt {
                 (self.env().transferred_balance() * consts.max_refund_permille_policy) / 1000,
             );
 
+            
             self.env().emit_event(SubscribeEvent {
                 provider: provider_address,
                 plan_index,
                 subscription_time: time,
                 duration: consts.duration,
+                price: consts.price,
+                characteristics: characteristics_values
             });
         }
 
@@ -747,6 +754,8 @@ pub mod subscrypt {
                 plan_index,
                 subscription_time: start_time,
                 duration: consts.duration,
+                price: consts.price,
+                characteristics: new_characteristics_values.clone(),
             });
         }
 
@@ -1196,6 +1205,40 @@ pub mod subscrypt {
                 },
                 None => panic!("provider address is not valid!"),
             }
+        }
+
+        /// get user's plan characteristics in this function
+        ///
+        /// # Returns
+        /// `user's plan characteristics` is returned
+        ///
+        /// # Example
+        /// Examples in `tests/test.rs` in get_user_plan_characteristics_works test
+        #[ink(message)]
+        pub fn get_user_plan_characteristics(&self, user: AccountId, provider_address: AccountId, plan_index: u128) -> Vec<String>  { // TODO: should add authentication
+            if !self
+                .plan_index_to_record_index
+                .contains_key(&(user, provider_address, plan_index))
+            {
+                panic!("user doesn't have this plan!");
+            }
+            let last_index: u128 = *self
+                .plan_index_to_record_index
+                .get(&(user, provider_address, plan_index))
+                .unwrap();
+            let number: usize = last_index.try_into().unwrap();
+            let record: &SubscriptionRecord = &self
+                .records
+                .get(&(user, provider_address))
+                .unwrap()
+                .subscription_records[number];
+            if record.plan_index != plan_index
+                || record.refunded
+                || record.plan.duration + record.subscription_time < self.env().block_timestamp()
+            {
+                panic!("user doesn't have this plan!");
+            }
+            record.characteristics_values_encrypted.clone()
         }
 
         /// We can get plan count in this function
