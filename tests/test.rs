@@ -428,6 +428,52 @@ pub mod tests {
         );
     }
 
+    /// check get_user_plan_characteristics
+    #[ink::test]
+    fn get_user_plan_characteristics_works() {
+        let mut subscrypt = Subscrypt::new();
+        let accounts = ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+            .expect("Cannot get accounts");
+        let callee =
+            ink_env::test::get_current_contract_account_id::<ink_env::DefaultEnvironment>()
+                .expect("Cannot get contract id");
+
+        set_account_balance(callee, 50100);
+        set_caller(callee, accounts.alice, 100);
+        subscrypt_provider_register_routine(
+            &mut subscrypt,
+            accounts.alice,
+            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![10000, 50000],
+            vec![50, 100],
+            "alice".to_string(),
+            vec![vec!["key".to_string()], vec!["key".to_string()]],
+        );
+
+        set_caller(callee, accounts.bob, 50000);
+
+        subscrypt.subscribe(
+            accounts.alice,
+            1,
+            [0; 32],
+            "bob".to_string(),
+            vec!["nothing important".to_string()],
+        );
+        assert_eq!(
+            subscrypt
+                .users
+                .get(&accounts.bob)
+                .unwrap()
+                .list_of_providers
+                .get(0)
+                .unwrap(),
+            &accounts.alice
+        );
+        assert_eq!(
+        subscrypt.get_user_plan_characteristics(accounts.bob, accounts.alice, 1).get(0).unwrap() ,&"nothing important".to_string()
+        );
+    }
+
     /// Simple scenario that `alice` register as a provider and `bob` tries to subscribe to her second plan
     /// `alice` has two plans. One is daily and other is monthly.
     /// `alice` also pays 100 because of the policy of the registering in contract.
