@@ -567,7 +567,7 @@ pub mod tests {
         subscrypt_provider_register_routine(
             &mut subscrypt,
             accounts.alice,
-            vec![60 * 60 * 24, 60 * 60 * 24 * 30],
+            vec![60 * 60 * 24, 0],
             vec![10000, 50000],
             vec![50, 100],
             "alice".to_string(),
@@ -593,7 +593,15 @@ pub mod tests {
             &accounts.alice
         );
         set_caller(callee, accounts.alice, 0);
-        subscrypt.withdraw();
+        let expected = subscrypt.get_withdrawable_amount();
+        assert_eq!(
+            subscrypt.withdraw(),
+            expected
+        );
+        assert_eq!(
+            subscrypt.withdraw(),
+            expected
+        );
     }
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
     /// and then `eve` tries to withdraw locked money but she can't.
