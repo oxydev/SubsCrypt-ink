@@ -949,6 +949,28 @@ pub mod subscrypt {
             customer_portion_locked_money
         }
 
+        /// This function returns the withdrawable amount
+        ///
+        /// # Returns
+        /// `paid` amount is returned
+        ///
+        /// # Panics
+        /// If `provider` does not exist
+        ///
+        /// # Examples
+        /// Examples in `withdraw_works` and `withdraw_works2` in `tests/test.rs`
+        #[ink(message)]
+        pub fn get_withdrawable_amount(&self) -> u128 {
+            assert!(
+                self.providers.contains_key(&self.env().caller()),
+                "You are not a registered provider"
+            );
+
+            let caller: AccountId = self.env().caller();
+            let t = self.process(caller, self.env().block_timestamp() / 86400);
+            t.withdrawing_amount
+        }
+
         /// This function indicate if `user` can authenticate with given `pass_phrase`
         /// # Note
         /// `user` are encouraged to have different `pass_phrase` for each provider
@@ -1521,13 +1543,13 @@ pub mod subscrypt {
         /// * provider_address
         /// * day_id : the calculation formula is : (finish date - contract start date) / 86400
         pub fn process(
-            &mut self,
+            &self,
             provider_address: AccountId,
             day_id: u64,
         ) -> ProcessReturningData {
-            let linked_list: &mut LinkedList = &mut self
+            let linked_list: &LinkedList = &self
                 .providers
-                .get_mut(&provider_address)
+                .get(&provider_address)
                 .unwrap()
                 .payment_manager;
             let mut sum: u128 = 0;
