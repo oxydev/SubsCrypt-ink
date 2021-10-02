@@ -598,10 +598,6 @@ pub mod tests {
             subscrypt.withdraw(),
             expected
         );
-        assert_eq!(
-            subscrypt.withdraw(),
-            expected
-        );
     }
     /// Simple scenario that `alice` register as a provider and `bob` will subscribe to her second plan
     /// and then `eve` tries to withdraw locked money but she can't.

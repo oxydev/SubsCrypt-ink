@@ -850,9 +850,11 @@ pub mod subscrypt {
 
             let linked_list: &mut LinkedList =
                 &mut self.providers.get_mut(&caller).unwrap().payment_manager;
-            linked_list.head = t.current_linked_list_head;
+
             linked_list.length -= t.reduced_length;
-            t.withdrawing_amount
+            linked_list.head = t.current_linked_list_head;
+
+            return t.withdrawing_amount;
         }
 
         /// `users` can use this function to easily refund their subscription as the policy of that
