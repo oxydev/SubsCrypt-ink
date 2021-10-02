@@ -1107,7 +1107,6 @@ pub mod subscrypt {
 
 
         /// This function returns provider money address
-        ///
         #[ink(message)]
         pub fn get_money_address(&self) -> ink_env::AccountId {
             let caller = self.env().caller();
