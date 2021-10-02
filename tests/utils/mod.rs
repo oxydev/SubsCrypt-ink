@@ -4,7 +4,7 @@ pub mod utils {
     use crate::subscrypt::subscrypt::Subscrypt;
     use ink_env::AccountId as Account;
     use ink_env::{call, test};
-    const DEFAULT_GAS_LIMIT: u128 = 1_000_000;
+    const DEFAULT_GAS_LIMIT: u64 = 1_000_000;
     use ink_env::hash::{HashOutput, Sha2x256};
 
     /// This function will set the `caller` and `callee` of transaction with endowment amount of
@@ -13,7 +13,7 @@ pub mod utils {
         test::push_execution_context::<ink_env::DefaultEnvironment>(
             from,
             callee,
-            DEFAULT_GAS_LIMIT,
+            DEFAULT_GAS_LIMIT.into(),
             value,
             test::CallData::new(call::Selector::new([0x00; 4])),
         );
