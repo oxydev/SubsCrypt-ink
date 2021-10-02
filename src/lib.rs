@@ -1105,6 +1105,21 @@ pub mod subscrypt {
             !self.username_to_address.contains_key(&username)
         }
 
+
+        /// This function returns provider money address
+        ///
+        #[ink(message)]
+        pub fn get_money_address(&self) -> ink_env::AccountId {
+            let caller = self.env().caller();
+
+            let provider = match self.providers.get(&caller) {
+                Some(x) => x,
+                None => panic!("You should first register in the contract!"),
+            };
+
+            provider.money_address
+        }
+
         /// This function indicate `username` of `caller`
         ///
         /// # Returns
