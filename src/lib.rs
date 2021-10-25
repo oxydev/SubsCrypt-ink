@@ -843,7 +843,7 @@ pub mod subscrypt {
             );
 
             let caller: AccountId = self.env().caller();
-            let t = self.process(caller, self.env().block_timestamp() / 86400);
+            let t = self.process(caller, (self.env().block_timestamp() - self.start_time)/ 86400);
             if t.withdrawing_amount > 0 {
                 assert_eq!(self.transfer(caller, t.withdrawing_amount), Ok(()));
             }
@@ -969,7 +969,7 @@ pub mod subscrypt {
             );
 
             let caller: AccountId = self.env().caller();
-            let t = self.process(caller, self.env().block_timestamp() / 86400);
+            let t = self.process(caller, (self.env().block_timestamp()  - self.start_time) / 86400);
             t.withdrawing_amount
         }
 
